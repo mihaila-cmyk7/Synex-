@@ -43,6 +43,15 @@ header b{cursor:pointer;user-select:none}
 header.on b::after{animation:lgp .6s ease-in-out infinite alternate}
 @keyframes lgp{to{transform:scale(1.9);opacity:.5}}
 code{background:#ffffff14;padding:1px 5px;border-radius:6px}
+#progress{position:fixed;left:14px;right:14px;bottom:14px;padding:10px 14px;background:var(--pn);border:1px solid var(--ln);border-radius:16px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:none;z-index:50;font-size:12px;box-shadow:0 6px 24px #0008}
+#progress .bar{height:6px;background:#ffffff24;border-radius:3px;overflow:hidden;margin-top:6px}
+#progress .fill{height:100%;background:var(--ac);width:0;transition:width .15s}
+#muzBox{padding:6px 0}
+#preList{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.pre{display:flex;gap:6px;align-items:center;padding:6px 8px;border:1px solid var(--ln);border-radius:12px;background:#ffffff08}
+.pre b{flex:1;font:600 12px/1.2 ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pre button{min-height:32px;min-width:32px;padding:4px 8px;font-size:11px}
+.pre .dot{width:8px;height:8px;border-radius:50%;flex:none}
 </style></head><body>
 <header><b id="lg">Synex²</b><button id="th">Ч / Б</button><label class="btn">Фон<input type="file" id="ph" accept="image/*" hidden></label><button id="phx" hidden>×</button></header>
 <canvas id="cv"></canvas>
@@ -67,6 +76,49 @@ code{background:#ffffff14;padding:1px 5px;border-radius:6px}
 <div id="vo"></div>
 <div class="lb">Формулы</div>
 <textarea id="f" spellcheck="false"></textarea>
+<div class="row"><button id="muz" title="Превратить формулу в слушабельный голос">✨ В музыку</button></div>
+<div id="muzBox" hidden>
+  <div class="lb" style="margin-top:0">Стиль · мелодичные</div>
+  <div class="row">
+    <button data-m="melody">Мелодия</button>
+    <button data-m="lead">Лид</button>
+    <button data-m="pluck">Щипок</button>
+    <button data-m="bell">Колокол</button>
+    <button data-m="pad">Пэд</button>
+    <button data-m="ambient">Эмбиент</button>
+  </div>
+  <div class="lb">Стиль · ритмичные</div>
+  <div class="row">
+    <button data-m="bass">Бас</button>
+    <button data-m="arp">Арпеджио</button>
+    <button data-m="chord">Аккорды</button>
+    <button data-m="stab">Стаккато</button>
+    <button data-m="perc">Перкуссия</button>
+    <button data-m="acid">Acid</button>
+  </div>
+  <div class="lb">Стиль · электроника / жанры</div>
+  <div class="row">
+    <button data-m="chiptune">Chiptune</button>
+    <button data-m="techno">Techno</button>
+    <button data-m="trance">Trance</button>
+    <button data-m="dubstep">Dubstep</button>
+    <button data-m="jazz">Jazz</button>
+    <button data-m="glitch">Glitch</button>
+  </div>
+  <div class="lb">Сюрприз</div>
+  <div class="row">
+    <button data-m="random">🎲 Случайный стиль</button>
+  </div>
+</div>
+
+<div class="lb">Пресеты (сохранить / наложить)</div>
+<div class="row">
+  <button id="prSave">💾 Сохранить как пресет</button>
+  <button id="prExp">⤓ Экспорт</button>
+  <label class="btn">⤒ Импорт<input type="file" id="prImp" accept="application/json,.json" hidden></label>
+</div>
+<div id="preList"></div>
+
 <div id="err"></div>
 <div id="st" style="font-size:13px;color:var(--mut);min-height:16px"></div>
 <div class="row" id="ps"></div>
@@ -81,6 +133,7 @@ code{background:#ffffff14;padding:1px 5px;border-radius:6px}
 <small>Каждая строка — отдельный голос: y = f(x). x — время, y — высота тона в октавах (0 = 660 Гц). Можно: sin, cos, abs, floor, mod(a,b), frac, log2, atan, exp, max, min, pi, ^, условие <code>if(a&lt;b, p, q)</code> или <code>a&lt;b ? p : q</code>, пауза — <code>rest</code>, нота MIDI — <code>note(60)</code>, последовательность — <code>pick(i, a, b, c)</code>. Формулы вида <code>y1=if(…)</code> из Desmos можно вставлять как есть. График: двумя пальцами — масштаб, одним — сдвиг, двойной тап — сброс. Своя дорожка: загрузи песню, выдели нужный фрагмент и перетащи его по таймлайну — волна рисуется и на графике, а звук идёт в воспроизведение и экспорт. Сдвиг голоса меняет и звук (в полутонах), «расстояние» только разводит строки на графике.</small>
 <div style="text-align:center;margin-top:14px"><button id="sx" title="🤫" style="min-height:30px;padding:4px 12px;opacity:.3;box-shadow:none">✦</button></div>
 </div>
+<div id="progress"><span id="ptxt">Готовлю…</span><div class="bar"><div class="fill" id="pfill"></div></div></div>
 <script>
 const $=id=>document.getElementById(id);
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand()}
@@ -161,7 +214,7 @@ function delVoice(n){
  if(L.some(l=>l.trim()&&l.trim()[0]!=='#'))preview();
  else{fs=[];off.length=0;$('err').textContent='';voices();plot();if(trk)tkDraw()}
 }
-function preview(){try{readCfg();fs=parse();$('err').textContent='';voices();plot()}catch(e){$('err').textContent=e.message}if(trk)tkDraw()}
+function preview(){try{readCfg();fs=parse();$('err').textContent='';voices();plot();saveDraft()}catch(e){$('err').textContent=e.message}if(trk)tkDraw()}
 const refresh=()=>{if(!src&&(fs.length||trk))plot()};
 $('xp').onclick=()=>{zoom(1/1.4,1);refresh()};$('xm').onclick=()=>{zoom(1.4,1);refresh()};
 $('yp').onclick=()=>{zoom(1,1/1.4);refresh()};$('ym').onclick=()=>{zoom(1,1.4);refresh()};
@@ -169,8 +222,8 @@ $('zr').onclick=()=>{resetView();refresh()};$('gp').oninput=refresh;
 const pts=new Map(),dist=()=>{const a=[...pts.values()];return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])};let pd=0;
 cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pd=pts.size==2?dist():0};
 cv.onpointermove=e=>{const o=pts.get(e.pointerId);if(!o)return;pts.set(e.pointerId,[e.clientX,e.clientY]);const r=cv.getBoundingClientRect();
- if(pts.size==1){const dx=(e.clientX-o[0])/r.width*(vx1-vx0);vx0-=dx;vx1-=dx;vyc+=(e.clientY-o[1])/r.height*2*vys}
- else if(pts.size==2){const d=dist();if(pd)zoom(pd/d,pd/d);pd=d}
+ if(pts.size===1){const dx=(e.clientX-o[0])/r.width*(vx1-vx0);vx0-=dx;vx1-=dx;vyc+=(e.clientY-o[1])/r.height*2*vys}
+ else if(pts.size===2){const d=dist();if(pd)zoom(pd/d,pd/d);pd=d}
  refresh()};
 cv.onpointerup=cv.onpointercancel=e=>{pts.delete(e.pointerId);pd=0};
 cv.onwheel=e=>{e.preventDefault();const k=e.deltaY>0?1.1:1/1.1;zoom(k,k);refresh()};
@@ -196,7 +249,7 @@ function mixTrack(out){
   const fr=p-k,y=d[k]*(1-fr)+d[k+1]*fr,g=Math.min(1,(t-trk.tOff)/.008,(e-t)/.008);
   out[i]=clamp(out[i]+y*v*g,-1,1)}
 }
-function pk(t,dt){ // мин/макс исходной волны на [t, t+dt] (сек исходника)
+function pk(t,dt){
  const s=trk.sr,d=trk.data;let a=Math.max(0,Math.floor(t*s));const b=Math.min(d.length,Math.ceil((t+dt)*s)+1);if(b<=a)return null;
  const st=Math.max(1,Math.floor((b-a)/48));a-=a%st;let mn=1,mx=-1;for(let i=a;i<b;i+=st){const v=d[i];if(v<mn)mn=v;if(v>mx)mx=v}
  return mx<mn?null:[mn,mx]}
@@ -274,30 +327,45 @@ function wav(d){const b=new DataView(new ArrayBuffer(44+d.length*2)),w=(o,t)=>[.
  w(0,'RIFF');b.setUint32(4,36+d.length*2,true);w(8,'WAVEfmt ');b.setUint32(16,16,true);b.setUint16(20,1,true);b.setUint16(22,1,true);b.setUint32(24,44100,true);b.setUint32(28,88200,true);b.setUint16(32,2,true);b.setUint16(34,16,true);w(36,'data');b.setUint32(40,d.length*2,true);
  for(let i=0;i<d.length;i++)b.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]))*32767,true);
  return new Blob([b],{type:'audio/wav'})}
+
+/* ===== Прогресс отправки ===== */
+function showProgress(txt,pct){const p=$('progress');p.style.display='block';$('ptxt').textContent=txt;$('pfill').style.width=(pct!=null?Math.max(0,Math.min(100,pct)):0)+'%'}
+function hideProgress(){setTimeout(()=>{$('progress').style.display='none'},700)}
+
 async function save(blob,name){
  const api=new URLSearchParams(location.search).get('api'),ty=blob.type.split('/')[0];
  if(api&&tg&&tg.initData){
-  $('st').textContent='Отправляю в чат с ботом…';
-  try{
-   const r=await fetch(api.replace(/\/$/,'')+'/upload',{method:'POST',headers:{'X-Init-Data':tg.initData,'X-Kind':ty==='image'?'photo':ty==='video'?'video':'audio','X-Filename':name},body:blob});
-   if(r.ok){$('st').textContent='Отправлено в чат с ботом';return}
-   throw Error(r.status);
-  }catch(e){$('st').textContent='Не удалось отправить в чат, сохраняю файлом'}
+  showProgress('Отправляю в чат… 0%',0);
+  const ok=await new Promise(res=>{
+   const xhr=new XMLHttpRequest();
+   xhr.open('POST',api.replace(/\/$/,'')+'/upload');
+   xhr.setRequestHeader('X-Init-Data',tg.initData);
+   xhr.setRequestHeader('X-Kind',ty==='image'?'photo':ty==='video'?'video':'audio');
+   xhr.setRequestHeader('X-Filename',name);
+   xhr.upload.onprogress=e=>{if(e.lengthComputable){const p=e.loaded/e.total*100;showProgress('Отправляю в чат… '+Math.round(p)+'%',p)}};
+   xhr.onload=()=>res(xhr.status>=200&&xhr.status<300);
+   xhr.onerror=()=>res(false);
+   xhr.send(blob);
+  });
+  if(ok){showProgress('Отправлено ✓',100);hideProgress();return}
+  showProgress('Не удалось отправить, сохраняю файлом…',0);
  }
+ showProgress('Готовлю файл…',100);
  const f=new File([blob],name,{type:blob.type});
- try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e.name==='AbortError')return}
+ try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});hideProgress();return}}catch(e){if(e.name==='AbortError'){hideProgress();return}}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();
+ hideProgress();
 }
-const fail=e=>{$('err').textContent=e.message};
-$('da').onclick=()=>{try{readCfg();fs=parse();$('err').textContent='';save(wav(render(fs,x0,x1,dur)),'mathmusic.wav')}catch(e){fail(e)}};
-$('dp').onclick=()=>{try{readCfg();fs=parse();$('err').textContent='';draw(RC.getContext('2d'),720,480,undefined,true);RC.toBlob(b=>save(b,'mathmusic.png'))}catch(e){fail(e)}};
+const fail=e=>{$('err').textContent=e.message;hideProgress()};
+$('da').onclick=()=>{try{showProgress('Рендерю аудио…',5);readCfg();fs=parse();$('err').textContent='';const d=render(fs,x0,x1,dur);showProgress('Кодирую WAV…',35);save(wav(d),'mathmusic.wav')}catch(e){fail(e)}};
+$('dp').onclick=()=>{try{showProgress('Рисую картинку…',20);readCfg();fs=parse();$('err').textContent='';draw(RC.getContext('2d'),720,480,undefined,true);RC.toBlob(b=>save(b,'mathmusic.png'))}catch(e){fail(e)}};
 $('dv').onclick=async()=>{
  stop();$('res').hidden=true;
  const mt=window.MediaRecorder&&['video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
  if(!mt){$('err').textContent='Видео здесь записать нельзя — скачай аудио и картинку';return}
  $('dv').disabled=true;
  try{
-  readCfg();fs=parse();$('err').textContent='';const d=render(fs,x0,x1,dur);
+  readCfg();fs=parse();$('err').textContent='';showProgress('Рендерю аудио…',5);const d=render(fs,x0,x1,dur);
   ctx=ctx||new AC();await ctx.resume();
   const b=ctx.createBuffer(1,d.length,44100);b.copyToChannel(d,0);
   const dest=ctx.createMediaStreamDestination(),s=ctx.createBufferSource(),g=RC.getContext('2d');
@@ -308,14 +376,176 @@ $('dv').onclick=async()=>{
   const done=new Promise(r=>rec.onstop=r);
   s.onended=()=>setTimeout(()=>{run=false;rec.stop()},400);
   rec.start();const t0=ctx.currentTime;s.start();
-  const tick=()=>{if(!run)return;const t=Math.min(ctx.currentTime-t0,dur);draw(g,720,480,x0+(x1-x0)*t/dur,true);$('dv').textContent='● '+Math.round(t/dur*100)+'%';requestAnimationFrame(tick)};tick();
+  const tick=()=>{if(!run)return;const t=Math.min(ctx.currentTime-t0,dur);draw(g,720,480,x0+(x1-x0)*t/dur,true);showProgress('Записываю видео… '+Math.round(t/dur*100)+'%',t/dur*100);$('dv').textContent='● '+Math.round(t/dur*100)+'%';requestAnimationFrame(tick)};tick();
   await done;
   const type=mt.split(';')[0],ext=type.includes('mp4')?'mp4':'webm';vid=new Blob(ch,{type});
   $('rv').src=URL.createObjectURL(vid);$('sv').textContent='Сохранить видео (.'+ext+')';$('sv').dataset.ext=ext;$('res').hidden=false;
+  showProgress('Видео готово, отправляю…',0);
+  save(vid,'mathmusic.'+ext);
  }catch(e){fail(e)}
  $('dv').disabled=false;$('dv').textContent='Видео';
 };
 $('sv').onclick=()=>save(vid,'mathmusic.'+$('sv').dataset.ext);
+
+/* ===== Музыкафикация ===== */
+function musicalize(src,mode){
+ const y=`(${src})`;
+ const q12=`mod(floor(12*${y}),12)`;
+ const step8=`floor(8*x)`;
+ const inStep=`frac(8*x)`;
+ const step4=`floor(4*x)`;
+ const in4=`frac(4*x)`;
+ const step16=`floor(16*x)`;
+ const in16=`frac(16*x)`;
+
+ switch(mode){
+  case'melody':
+   return `mod(${step8},4)==3 ? rest : -1 + 2.2*${q12}/12`;
+  case'lead':
+   return `-0.5 + 2.0*mod(floor(12*${y}),12)/12 + 0.04*sin(60*x) + 0.02*sin(4*x)*sin(30*x)`;
+  case'pluck':
+   return `(-0.6 + 1.8*${q12}/12) * exp(-8*${inStep})`;
+  case'bell':
+   return `(1.0 + 2.4*${q12}/12) * exp(-6*${in16}) * (0.6+0.4*sin(12*x))`;
+  case'pad':
+   return `-0.8 + 1.6*mod(floor(6*${y}),12)/12 + 0.05*sin(2*x) + 0.03*sin(3.01*x)`;
+  case'ambient':
+   return `-1.5 + 1.2*mod(floor(4*${y}),12)/12 + 0.1*sin(0.5*x) + 0.05*sin(1.3*x)`;
+  case'bass':
+   return `-2.2 + 1.6*mod(floor(12*${y}),7)/12 + 0.02*sin(40*x)`;
+  case'arp':
+   return `-0.5 + 1.8*mod(floor(mod(floor(12*${y}),3) + 3*mod(${step8},16)),12)/12`;
+  case'chord':
+   return `-1.2 + 1.8*mod(${q12} + pick(${step4},0,4,7,4),12)/12`;
+  case'stab':
+   return `mod(${step4},2)==0 ? (-0.8 + 1.8*mod(${q12} + pick(${step4},0,3,7),12)/12) * exp(-12*${in4}) : rest`;
+  case'perc':
+   return `max(0, 1 - 20*${inStep}) * (0.6 + 0.6*${q12}/12) - 0.6`;
+  case'acid':
+   return `-0.7 + 1.8*mod(floor(24*${y})/2,12)/12 + 0.3*exp(-6*${in16})*sin(120*x)`;
+  case'chiptune':
+   return `-0.4 + 2.0*mod(floor(12*${y}) + pick(${step16},0,4,7,12),12)/12`;
+  case'techno':
+   return `mod(${step8},4)==0 ? -0.8 + 1.6*${q12}/12 : (mod(${step8},4)==2 ? -1.4 + 1.2*mod(floor(12*${y}),7)/12 : rest)`;
+  case'trance':
+   return `-0.6 + 1.8*mod(floor(12*${y}) + pick(${step16},0,3,7,10),12)/12 + 0.2*sin(2*pi*x/16)`;
+  case'dubstep':
+   return `-2.0 + 1.2*mod(floor(12*${y}),7)/12 + 0.4*sin(3*x)*sin(20*x)`;
+  case'jazz':
+   return `-0.7 + 1.8*mod(floor(12*${y}) + pick(${step4},0,4,7,10),12)/12 + 0.03*sin(5*x)`;
+  case'glitch':
+   return `frac(sin(floor(16*x)*12.9898)*43758.5453) < 0.3 ? rest : -1 + 2.0*mod(floor(24*${y}),12)/12`;
+  case'random':{
+   const styles=['melody','lead','pluck','bell','pad','ambient','bass','arp','chord','stab','perc','acid','chiptune','techno','trance','dubstep','jazz','glitch'];
+   const pickStyle=styles[Math.floor(Math.random()*styles.length)];
+   return musicalize(src,pickStyle);
+  }
+ }
+ return src;
+}
+$('muz').onclick=()=>{stop();$('muzBox').hidden=!$('muzBox').hidden};
+$('muzBox').querySelectorAll('button').forEach(b=>{
+ b.onclick=()=>{
+  stop();
+  const L=$('f').value.split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
+  if(!L.length){$('err').textContent='Сначала введи формулу';return}
+  const mode=b.dataset.m;
+  const out=L.map(s=>musicalize(s.replace(/^y\d*\s*=/,''),mode));
+  $('f').value=out.join('\n');
+  off.length=0;
+  $('muzBox').hidden=true;
+  preview();
+ };
+});
+
+/* ===== Пресеты ===== */
+const PRE_KEY='mm_presets_v1';
+function loadPresets(){try{return JSON.parse(localStorage.getItem(PRE_KEY)||'{}')}catch{return{}}}
+function savePresets(o){try{localStorage.setItem(PRE_KEY,JSON.stringify(o))}catch{}renderPresets()}
+function currentFormulas(){
+ return $('f').value.split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
+}
+function renderPresets(){
+ const box=$('preList');box.innerHTML='';
+ const all=loadPresets(),names=Object.keys(all);
+ if(!names.length){
+  const d=document.createElement('div');
+  d.style.cssText='color:var(--mut);font-size:12px;padding:6px 0';
+  d.textContent='Пока нет пресетов. Напиши формулы и нажми «💾 Сохранить как пресет».';
+  box.append(d);return;
+ }
+ names.forEach((name,i)=>{
+  const lines=all[name],row=document.createElement('div');
+  row.className='pre';
+  const dot=document.createElement('span');
+  dot.className='dot';dot.style.background=PAL[i%PAL.length];
+  const b=document.createElement('b');b.textContent=name+' · '+lines.length+' голос'+(lines.length>1?'а':'');
+  const bAdd=document.createElement('button');bAdd.textContent='➕';bAdd.title='Добавить как новые голоса (наложить)';
+  bAdd.onclick=()=>{
+   stop();
+   const cur=$('f').value.trim();
+   const add=lines.join('\n');
+   $('f').value=cur?(cur+'\n'+add):add;
+   off.length=0;preview();
+  };
+  const bLoad=document.createElement('button');bLoad.textContent='📥';bLoad.title='Заменить все формулы пресетом';
+  bLoad.onclick=()=>{
+   stop();$('f').value=lines.join('\n');off.length=0;preview();
+  };
+  const bRen=document.createElement('button');bRen.textContent='✏️';bRen.title='Переименовать';
+  bRen.onclick=()=>{
+   const nn=prompt('Новое имя пресета:',name);
+   if(!nn||nn===name)return;
+   const o=loadPresets();
+   if(o[nn]&&!confirm('Пресет «'+nn+'» уже есть. Заменить?'))return;
+   o[nn]=o[name];delete o[name];savePresets(o);
+  };
+  const bDel=document.createElement('button');bDel.textContent='🗑';bDel.title='Удалить';bDel.style.color='var(--dg)';
+  bDel.onclick=()=>{
+   if(!confirm('Удалить пресет «'+name+'»?'))return;
+   const o=loadPresets();delete o[name];savePresets(o);
+  };
+  row.append(dot,b,bAdd,bLoad,bRen,bDel);
+  box.append(row);
+ });
+}
+$('prSave').onclick=()=>{
+ const lines=currentFormulas();
+ if(!lines.length){$('err').textContent='Сначала введи хотя бы одну формулу';return}
+ const name=(prompt('Название пресета:','Мой трек '+new Date().toLocaleDateString())||'').trim();
+ if(!name)return;
+ const all=loadPresets();
+ if(all[name]&&!confirm('Пресет «'+name+'» уже есть. Перезаписать?'))return;
+ all[name]=lines;savePresets(all);
+};
+$('prExp').onclick=()=>{
+ const data={version:1,exported:new Date().toISOString(),presets:loadPresets()};
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mathmusic-presets.json';
+ document.body.append(a);a.click();a.remove();
+};
+$('prImp').onchange=async e=>{
+ const f=e.target.files[0];e.target.value='';if(!f)return;
+ try{
+  const data=JSON.parse(await f.text());
+  const incoming=data.presets||data;
+  if(typeof incoming!=='object')throw Error('нет поля presets');
+  const all=loadPresets();let added=0,merged=0;
+  for(const[k,v]of Object.entries(incoming)){
+   if(!Array.isArray(v))continue;
+   if(all[k]){all[k]=all[k].concat(v);merged++}
+   else{all[k]=v;added++}
+  }
+  savePresets(all);
+  $('st').textContent='Импортировано: '+added+' новых, '+merged+' объединено';
+ }catch(err){$('err').textContent='Не удалось прочитать JSON: '+err.message}
+};
+
+/* ===== Автосохранение текущих формул ===== */
+const DRAFT_KEY='mm_draft_v1';
+function saveDraft(){try{localStorage.setItem(DRAFT_KEY,$('f').value)}catch{}}
+function loadDraft(){try{return localStorage.getItem(DRAFT_KEY)}catch{return null}}
+
 function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('th',t)}catch{}if(fs.length||trk)plot();if(trk)tkDraw()}
 $('th').onclick=()=>setTheme(document.documentElement.dataset.theme==='light'?'dark':'light');
 function setPhoto(u){
@@ -347,8 +577,7 @@ const P={
  'Лазер':'2-3.5*frac(4*(x+4.25)/8.5)'
 };
 for(const k in P){const b=document.createElement('button');b.textContent='+ '+k;b.onclick=()=>{stop();const t=$('f');t.value=(t.value.trim()?t.value.trim()+'\n':'')+P[k];preview()};$('ps').append(b)}
-const cl=document.createElement('button');cl.textContent='Очистить';cl.onclick=()=>{stop();$('f').value='';fs=[];c2.clearRect(0,0,cv.width,cv.height)};$('ps').append(cl);
-/* секретная кнопка: оригинальный психоделик-диско бит (x = доли, ≈110 BPM) */
+const cl=document.createElement('button');cl.textContent='Очистить';cl.onclick=()=>{stop();$('f').value='';fs=[];c2.clearRect(0,0,cv.width,cv.height);saveDraft()};$('ps').append(cl);
 const SX=[
  '-2.6683+2.65*exp(-18*frac(x))',
  'mod(x,1)>0.5 and mod(x,1)<0.6 ? 1.6+2*frac(sin(floor(x*4000)*12.9898)*43758.5453) : rest',
@@ -357,21 +586,24 @@ const SX=[
 ];
 $('sx').onclick=()=>{sngStop();stop();$('f').value=SX.join('\n');off.length=0;$('x0').value=0;$('x1').value=16;$('d').value=8.73;$('lp').checked=true;preview();play()};
 const Q=new URLSearchParams(location.search);
-$('f').value=Q.get('f')||P['Бочка']+'\n'+P['Мелодия'];
+/* стартовое значение: URL → черновик → дефолт */
+const draft=loadDraft();
+$('f').value=Q.get('f')||draft||(P['Бочка']+'\n'+P['Мелодия']);
 [['x0','x0'],['x1','x1'],['seconds','d']].forEach(([k,i])=>{const v=Q.get(k);if(v&&isFinite(v))$(i).value=v});
 document.querySelectorAll('a.xl').forEach(a=>{a.target='_blank';a.rel='noopener';a.onclick=e=>{if(tg&&tg.openLink){e.preventDefault();tg.openLink(a.href)}}});
-/* логотип Synex² сверху: только песня с 2:50, формулы стираются (файл let-it-happen.mp3 лежит рядом с index.html) */
 const SNG=new Audio('let-it-happen.mp3');SNG.preload='auto';SNG.volume=.8;
 const H=document.querySelector('header');
 const sngStop=()=>{SNG.pause();SNG.currentTime=0;H.classList.remove('on')};
 SNG.onended=sngStop;
 $('lg').onclick=()=>{
  if(!SNG.paused||src){sngStop();if(src)stop();return}
- stop();$('f').value='';fs=[];off.length=0;$('err').textContent='';voices();c2.clearRect(0,0,cv.width,cv.height);/* формулы стираются, играет только песня */
+ stop();$('f').value='';fs=[];off.length=0;$('err').textContent='';voices();c2.clearRect(0,0,cv.width,cv.height);saveDraft();
  SNG.currentTime=0;SNG.play().then(()=>H.classList.add('on')).catch(()=>{});
 };
 $('p').onclick=()=>{sngStop();src?stop():play()};
 ['f','x0','x1','d','lp'].forEach(i=>$(i).addEventListener('input',()=>{if(!src)preview()}));
 addEventListener('resize',()=>{cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;sizeCv();preview()});
-cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;preview();
+cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;
+renderPresets();
+preview();
 </script></body></html>
