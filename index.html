@@ -39,9 +39,12 @@ input[type=range]{accent-color:var(--ac);height:30px}
 video{width:100%;margin-top:10px;display:block;border-radius:16px}
 small{color:var(--mut);line-height:1.6;display:block;margin-top:18px;font-size:11px}
 a.xl{text-decoration:none}
+header b{cursor:pointer;user-select:none}
+header.on b::after{animation:lgp .6s ease-in-out infinite alternate}
+@keyframes lgp{to{transform:scale(1.9);opacity:.5}}
 code{background:#ffffff14;padding:1px 5px;border-radius:6px}
 </style></head><body>
-<header><b>Synex²</b><button id="th">Ч / Б</button><label class="btn">Фон<input type="file" id="ph" accept="image/*" hidden></label><button id="phx" hidden>×</button></header>
+<header><b id="lg">Synex²</b><button id="th">Ч / Б</button><label class="btn">Фон<input type="file" id="ph" accept="image/*" hidden></label><button id="phx" hidden>×</button></header>
 <canvas id="cv"></canvas>
 <div class="p">
 <div class="row"><button id="p">Играть</button><label><input type="checkbox" id="lp" checked> цикл</label></div>
@@ -76,6 +79,7 @@ code{background:#ffffff14;padding:1px 5px;border-radius:6px}
 <div class="row"><button id="dv">Видео</button><button id="da">Аудио</button><button id="dp">Картинка</button></div>
 <div id="res" hidden><video id="rv" controls playsinline></video><div class="row"><button id="sv"></button></div></div>
 <small>Каждая строка — отдельный голос: y = f(x). x — время, y — высота тона в октавах (0 = 660 Гц). Можно: sin, cos, abs, floor, mod(a,b), frac, log2, atan, exp, max, min, pi, ^, условие <code>if(a&lt;b, p, q)</code> или <code>a&lt;b ? p : q</code>, пауза — <code>rest</code>, нота MIDI — <code>note(60)</code>, последовательность — <code>pick(i, a, b, c)</code>. Формулы вида <code>y1=if(…)</code> из Desmos можно вставлять как есть. График: двумя пальцами — масштаб, одним — сдвиг, двойной тап — сброс. Своя дорожка: загрузи песню, выдели нужный фрагмент и перетащи его по таймлайну — волна рисуется и на графике, а звук идёт в воспроизведение и экспорт. Сдвиг голоса меняет и звук (в полутонах), «расстояние» только разводит строки на графике.</small>
+<div style="text-align:center;margin-top:14px"><button id="sx" title="🤫" style="min-height:30px;padding:4px 12px;opacity:.3;box-shadow:none">✦</button></div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
@@ -344,11 +348,29 @@ const P={
 };
 for(const k in P){const b=document.createElement('button');b.textContent='+ '+k;b.onclick=()=>{stop();const t=$('f');t.value=(t.value.trim()?t.value.trim()+'\n':'')+P[k];preview()};$('ps').append(b)}
 const cl=document.createElement('button');cl.textContent='Очистить';cl.onclick=()=>{stop();$('f').value='';fs=[];c2.clearRect(0,0,cv.width,cv.height)};$('ps').append(cl);
+/* секретная кнопка: оригинальный психоделик-диско бит (x = доли, ≈110 BPM) */
+const SX=[
+ '-2.6683+2.65*exp(-18*frac(x))',
+ 'mod(x,1)>0.5 and mod(x,1)<0.6 ? 1.6+2*frac(sin(floor(x*4000)*12.9898)*43758.5453) : rest',
+ 'frac(2*x)<0.8 ? note(pick(floor(2*x),45,45,57,45,45,57,45,45,41,41,53,41,41,53,41,41,48,48,60,48,48,60,48,48,43,43,55,43,43,55,43,43)) : rest',
+ 'frac(4*x)<0.7 ? note(pick(floor(x/4),69,65,72,67)+pick(mod(floor(4*x),8),0,7,12,7,pick(floor(x/4),15,16,16,16),7,12,7)) : rest'
+];
+$('sx').onclick=()=>{stop();$('f').value=SX.join('\n');off.length=0;$('x0').value=0;$('x1').value=16;$('d').value=8.73;$('lp').checked=true;preview();play()};
 const Q=new URLSearchParams(location.search);
 $('f').value=Q.get('f')||P['Бочка']+'\n'+P['Мелодия'];
 [['x0','x0'],['x1','x1'],['seconds','d']].forEach(([k,i])=>{const v=Q.get(k);if(v&&isFinite(v))$(i).value=v});
 document.querySelectorAll('a.xl').forEach(a=>{a.target='_blank';a.rel='noopener';a.onclick=e=>{if(tg&&tg.openLink){e.preventDefault();tg.openLink(a.href)}}});
-$('p').onclick=()=>src?stop():play();
+/* логотип Synex² сверху: песня с 2:50 на фоне + играют формулы из редактора (файл let-it-happen.mp3 лежит рядом с index.html) */
+const SNG=new Audio('let-it-happen.mp3');SNG.preload='auto';SNG.volume=.8;
+const H=document.querySelector('header');
+const sngStop=()=>{SNG.pause();SNG.currentTime=0;H.classList.remove('on')};
+SNG.onended=sngStop;
+$('lg').onclick=()=>{
+ if(!SNG.paused||src){sngStop();if(src)stop();return}
+ SNG.currentTime=0;SNG.play().then(()=>H.classList.add('on')).catch(()=>{});
+ play();
+};
+$('p').onclick=()=>{sngStop();src?stop():play()};
 ['f','x0','x1','d','lp'].forEach(i=>$(i).addEventListener('input',()=>{if(!src)preview()}));
 addEventListener('resize',()=>{cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;sizeCv();preview()});
 cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;preview();
