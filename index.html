@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Math Music</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:12px;font:15px system-ui,sans-serif;background:var(--tg-theme-bg-color,#0f1117);color:var(--tg-theme-text-color,#e8e8ee)}
+canvas{touch-action:none;width:100%;height:210px;background:#fff1;border-radius:12px;display:block}
+textarea{width:100%;height:150px;margin:10px 0 6px;padding:10px;border-radius:12px;border:1px solid #8885;background:#fff1;color:inherit;font:13px ui-monospace,monospace}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+input[type=number]{width:70px;padding:7px;border-radius:8px;border:1px solid #8885;background:#fff1;color:inherit}
+button{padding:9px 14px;border:0;border-radius:10px;background:#8883;color:inherit;font-size:14px}
+#p{background:var(--tg-theme-button-color,#2f81f7);color:var(--tg-theme-button-text-color,#fff);font-weight:600;flex:1}
+#err{color:#ff6b6b;min-height:18px;font-size:13px}
+video{width:100%;border-radius:12px;margin-top:8px;display:block}
+small{opacity:.6;line-height:1.4;display:block;margin-top:8px}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div class="row">🔍 X <button id="xm">−</button><button id="xp">+</button> Y <button id="ym">−</button><button id="yp">+</button> <button id="zr">⟲ сброс</button></div>
+<div class="row">Расстояние между строками <input type="range" id="gp" min="0" max="2" step="0.05" value="0" style="flex:1"></div>
+<div id="vo"></div>
+<textarea id="f" spellcheck="false"></textarea>
+<div id="err"></div>
+<div class="row"><button id="p">▶ Играть</button><label><input type="checkbox" id="lp" checked> цикл</label></div>
+<div class="row"><button id="dv">🎬 Видео</button><button id="da">🎧 Аудио</button><button id="dp">🖼 Картинка</button></div>
+<div id="res" hidden><video id="rv" controls playsinline></video><div class="row"><button id="sv"></button></div></div>
+<div class="row">x от <input type="number" id="x0" value="-4.25" step="any"> до <input type="number" id="x1" value="4.25" step="any"> сек <input type="number" id="d" value="8" min="1" max="60"></div>
+<div class="row" id="ps"></div>
+<small>Каждая строка — отдельный голос: y = f(x). x — время, y — высота тона в октавах (0 = 660 Гц). Можно: sin, cos, abs, floor, mod(a,b), frac, log2, atan, exp, max, min, pi, ^, условие <code>if(a&lt;b, p, q)</code> или <code>a&lt;b ? p : q</code>, пауза — <code>rest</code>, нота MIDI — <code>note(60)</code>, последовательность — <code>pick(i, a, b, c)</code>. Формулы вида <code>y1=if(…)</code> из Desmos можно вставлять как есть. График: двумя пальцами — масштаб, одним — сдвиг, двойной тап — сброс. Сдвиг голоса меняет и звук (в полутонах), «расстояние» только разводит строки на графике.</small>
+<script>
+const $=id=>document.getElementById(id);
+const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand()}
+const mod=(a,b)=>a-b*Math.floor(a/b),frac=a=>a-Math.floor(a),pick=(i,...a)=>a[mod(Math.floor(i),a.length)],note=m=>(m-72)/12-0.33496;
+const F={sin:'Math.sin',cos:'Math.cos',tan:'Math.tan',atan:'Math.atan',arctan:'Math.atan',asin:'Math.asin',acos:'Math.acos',abs:'Math.abs',floor:'Math.floor',ceil:'Math.ceil',round:'Math.round',sqrt:'Math.sqrt',exp:'Math.exp',ln:'Math.log',log:'Math.log',log2:'Math.log2',log10:'Math.log10',max:'Math.max',min:'Math.min',sign:'Math.sign',mod:'mod',frac:'frac',pick:'pick',note:'note'};
+function gen(n){
+ switch(n.type){
+  case'ConstantNode':return'('+JSON.stringify(n.value)+')';
+  case'ParenthesisNode':return'('+gen(n.content)+')';
+  case'SymbolNode':
+   if(n.name==='x')return'x';if(n.name==='pi')return'Math.PI';if(n.name==='e')return'Math.E';if(n.name==='rest')return'NaN';
+   throw Error('неизвестно: '+n.name);
+  case'FunctionNode':{if(n.fn.name==='iff'&&n.args.length>1)return'('+gen(n.args[0])+'?'+gen(n.args[1])+':'+(n.args[2]?gen(n.args[2]):'NaN')+')';const f=F[n.fn.name];if(!f)throw Error('нет функции '+n.fn.name);return f+'('+n.args.map(gen).join(',')+')'}
+  case'ConditionalNode':return'('+gen(n.condition)+'?'+gen(n.trueExpr)+':'+gen(n.falseExpr)+')';
+  case'OperatorNode':{
+   const a=n.args.map(gen);
+   if(a.length===1)return n.op==='-'?'(-'+a[0]+')':n.op==='+'?a[0]:'(!'+a[0]+')';
+   if(n.op==='^')return'Math.pow('+a[0]+','+a[1]+')';
+   if(n.op==='%'||n.op==='mod')return'mod('+a[0]+','+a[1]+')';
+   const m={and:'&&',or:'||'};return'('+a[0]+(m[n.op]||n.op)+a[1]+')';}
+ }
+ throw Error('не поддерживается: '+n.type);
+}
+function parse(){
+ const L=$('f').value.split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
+ if(!L.length)throw Error('Введи формулу');
+ return L.map((s,i)=>{try{
+  s=s.replace(/^y\d*\s*=/,'').replace(/[−–]/g,'-').replace(/[·×]/g,'*').replace(/π/g,'pi').replace(/⌊/g,'floor(').replace(/⌋/g,')').replace(/≥/g,'>=').replace(/≤/g,'<=').replace(/≠/g,'!=').replace(/\bif\s*\(/g,'iff(').replace(/(?<![<>=!])=(?!=)/g,'==');
+  return new Function('mod','frac','pick','note','return x=>'+gen(math.parse(s)))(mod,frac,pick,note);
+ }catch(e){throw Error('Строка '+(i+1)+': '+e.message)}}).map((f,n)=>x=>f(x)+(off[n]||0));
+}
+function render(fs,x0,x1,dur){
+ const sr=44100,N=Math.floor(sr*dur),out=new Float32Array(N),T=Math.PI*2;
+ for(const f of fs){let ph=0,g=0;
+  for(let i=0;i<N;i++){
+   const y=f(x0+(x1-x0)*i/N),on=isFinite(y);
+   g+=((on?1:0)-g)*0.004;
+   if(on){ph+=T*Math.min(20000,Math.max(20,660*Math.pow(2,y)))/sr;if(ph>T)ph-=T}
+   out[i]+=Math.sin(ph)*g;}}
+ for(let i=0;i<N;i++)out[i]=Math.tanh(out[i]*0.7);
+ return out;
+}
+const cv=$('cv'),c2=cv.getContext('2d'),dpr=window.devicePixelRatio||1,COL=['#4fc3f7','#ffb74d','#81c784','#ba68c8','#f06292'],Y=5;
+let fs=[],x0=-4.25,x1=4.25,dur=8,ctx,src,t0=0,raf;
+let vx0=-4.25,vx1=4.25,vyc=0,vys=5,lx0,lx1;const off=[];
+function resetView(){vx0=x0;vx1=x1;vyc=0;vys=5}
+function zoom(kx,ky){const cx=(vx0+vx1)/2,h=(vx1-vx0)/2*kx;vx0=cx-h;vx1=cx+h;vys*=ky}
+function draw(c,W,H,xd,bg){
+ const px=x=>(x-vx0)/(vx1-vx0)*W,py=y=>H/2*(1-(y-vyc)/vys),k=bg?2:dpr,fg=bg?'#fff':getComputedStyle(cv).color,gp=+$('gp').value;
+ if(bg){c.fillStyle='#0f1117';c.fillRect(0,0,W,H)}else c.clearRect(0,0,W,H);
+ c.fillStyle=bg?'#0008':'#8882';
+ if(vx0<x0)c.fillRect(0,0,Math.min(W,px(x0)),H);
+ if(vx1>x1)c.fillRect(Math.max(0,px(x1)),0,W,H);
+ c.strokeStyle='#8886';c.lineWidth=k;c.beginPath();c.moveTo(0,py(0));c.lineTo(W,py(0));
+ if(vx0<0&&vx1>0){c.moveTo(px(0),0);c.lineTo(px(0),H)}c.stroke();
+ fs.forEach((f,n)=>{c.fillStyle=COL[n%5];const sh=-n*gp;
+  for(let i=0;i<W;i++){let a=1e9,b=-1e9;
+   for(let j=0;j<6;j++){const y=f(vx0+(vx1-vx0)*(i+j/6)/W)+sh;if(isFinite(y)){a=Math.min(a,y);b=Math.max(b,y)}}
+   if(a<=b){const t=py(Math.min(b,vyc+2*vys));c.fillRect(i,t,Math.max(1,W/700),Math.max(1.5*k,py(Math.max(a,vyc-2*vys))-t))}}
+  if(xd!==undefined){const y=f(xd)+sh;if(isFinite(y)){c.beginPath();c.arc(px(xd),py(y),6*k,0,7);c.fillStyle=fg;c.fill()}}});
+}
+const plot=xd=>draw(c2,cv.width,cv.height,xd);
+function readCfg(){x0=+$('x0').value;x1=+$('x1').value;dur=Math.min(60,Math.max(1,+$('d').value||8));if(x1<=x0)throw Error('x «до» должен быть больше «от»');if(x0!==lx0||x1!==lx1){lx0=x0;lx1=x1;resetView()}}
+function voices(){
+ const box=$('vo');box.innerHTML='';
+ fs.forEach((_,n)=>{const r=document.createElement('div'),v=document.createElement('span'),btn=(t,d)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{off[n]=((off[n]||0)*12+d)/12;stop();preview()};return b};
+  r.className='row';const m=Math.round((off[n]||0)*12);
+  r.innerHTML='<span style="color:'+COL[n%5]+'">●</span> Голос '+(n+1)+': сдвиг ';v.textContent=(m>0?'+':'')+m+' пт';
+  r.append(btn('−',-1),v,btn('+',1));box.append(r)});
+}
+function preview(){try{readCfg();fs=parse();$('err').textContent='';voices();plot()}catch(e){$('err').textContent=e.message}}
+const refresh=()=>{if(!src&&fs.length)plot()};
+$('xp').onclick=()=>{zoom(1/1.4,1);refresh()};$('xm').onclick=()=>{zoom(1.4,1);refresh()};
+$('yp').onclick=()=>{zoom(1,1/1.4);refresh()};$('ym').onclick=()=>{zoom(1,1.4);refresh()};
+$('zr').onclick=()=>{resetView();refresh()};$('gp').oninput=refresh;
+const pts=new Map(),dist=()=>{const a=[...pts.values()];return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])};let pd=0;
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pd=pts.size==2?dist():0};
+cv.onpointermove=e=>{const o=pts.get(e.pointerId);if(!o)return;pts.set(e.pointerId,[e.clientX,e.clientY]);const r=cv.getBoundingClientRect();
+ if(pts.size==1){const dx=(e.clientX-o[0])/r.width*(vx1-vx0);vx0-=dx;vx1-=dx;vyc+=(e.clientY-o[1])/r.height*2*vys}
+ else if(pts.size==2){const d=dist();if(pd)zoom(pd/d,pd/d);pd=d}
+ refresh()};
+cv.onpointerup=cv.onpointercancel=e=>{pts.delete(e.pointerId);pd=0};
+cv.onwheel=e=>{e.preventDefault();const k=e.deltaY>0?1.1:1/1.1;zoom(k,k);refresh()};
+cv.ondblclick=()=>{resetView();refresh()};
+function stop(){cancelAnimationFrame(raf);if(src){src.onended=null;try{src.stop()}catch{}src=null}$('p').textContent='▶ Играть';if(fs.length)plot()}
+async function play(){
+ try{readCfg();fs=parse();$('err').textContent=''}catch(e){$('err').textContent=e.message;return}
+ ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();await ctx.resume();
+ const d=render(fs,x0,x1,dur),b=ctx.createBuffer(1,d.length,44100);b.copyToChannel(d,0);
+ src=ctx.createBufferSource();src.buffer=b;src.loop=$('lp').checked;src.connect(ctx.destination);src.onended=stop;
+ t0=ctx.currentTime;src.start();$('p').textContent='■ Стоп';
+ const tick=()=>{plot(x0+(x1-x0)*(((ctx.currentTime-t0)%dur)/dur));raf=requestAnimationFrame(tick)};tick();
+}
+const RC=document.createElement('canvas');RC.width=720;RC.height=480;
+const AC=window.AudioContext||window.webkitAudioContext;let vid=null;
+function wav(d){const b=new DataView(new ArrayBuffer(44+d.length*2)),w=(o,t)=>[...t].forEach((h,i)=>b.setUint8(o+i,h.charCodeAt(0)));
+ w(0,'RIFF');b.setUint32(4,36+d.length*2,true);w(8,'WAVEfmt ');b.setUint32(16,16,true);b.setUint16(20,1,true);b.setUint16(22,1,true);b.setUint32(24,44100,true);b.setUint32(28,88200,true);b.setUint16(32,2,true);b.setUint16(34,16,true);w(36,'data');b.setUint32(40,d.length*2,true);
+ for(let i=0;i<d.length;i++)b.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]))*32767,true);
+ return new Blob([b],{type:'audio/wav'})}
+async function save(blob,name){
+ const f=new File([blob],name,{type:blob.type});
+ try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e.name==='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();
+}
+const fail=e=>{$('err').textContent=e.message};
+$('da').onclick=()=>{try{readCfg();fs=parse();$('err').textContent='';save(wav(render(fs,x0,x1,dur)),'mathmusic.wav')}catch(e){fail(e)}};
+$('dp').onclick=()=>{try{readCfg();fs=parse();$('err').textContent='';draw(RC.getContext('2d'),720,480,undefined,true);RC.toBlob(b=>save(b,'mathmusic.png'))}catch(e){fail(e)}};
+$('dv').onclick=async()=>{
+ stop();$('res').hidden=true;
+ const mt=window.MediaRecorder&&['video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+ if(!mt){$('err').textContent='Видео здесь записать нельзя — скачай аудио и картинку';return}
+ $('dv').disabled=true;
+ try{
+  readCfg();fs=parse();$('err').textContent='';const d=render(fs,x0,x1,dur);
+  ctx=ctx||new AC();await ctx.resume();
+  const b=ctx.createBuffer(1,d.length,44100);b.copyToChannel(d,0);
+  const dest=ctx.createMediaStreamDestination(),s=ctx.createBufferSource(),g=RC.getContext('2d');
+  s.buffer=b;s.connect(dest);s.connect(ctx.destination);
+  const vs=RC.captureStream(30);dest.stream.getAudioTracks().forEach(t=>vs.addTrack(t));
+  const rec=new MediaRecorder(vs,{mimeType:mt,videoBitsPerSecond:2500000}),ch=[];let run=true;
+  rec.ondataavailable=e=>e.data.size&&ch.push(e.data);
+  const done=new Promise(r=>rec.onstop=r);
+  s.onended=()=>setTimeout(()=>{run=false;rec.stop()},400);
+  rec.start();const t0=ctx.currentTime;s.start();
+  const tick=()=>{if(!run)return;const t=Math.min(ctx.currentTime-t0,dur);draw(g,720,480,x0+(x1-x0)*t/dur,true);$('dv').textContent='⏺ '+Math.round(t/dur*100)+'%';requestAnimationFrame(tick)};tick();
+  await done;
+  const type=mt.split(';')[0],ext=type.includes('mp4')?'mp4':'webm';vid=new Blob(ch,{type});
+  $('rv').src=URL.createObjectURL(vid);$('sv').textContent='💾 Сохранить видео (.'+ext+')';$('sv').dataset.ext=ext;$('res').hidden=false;
+ }catch(e){fail(e)}
+ $('dv').disabled=false;$('dv').textContent='🎬 Видео';
+};
+$('sv').onclick=()=>save(vid,'mathmusic.'+$('sv').dataset.ext);
+const P={
+ 'Бочка':'-2.5+3.9/(1+19*mod(x+0.8,1))+0.85*sin(72*pi*mod(x+0.8,1))/(1+12*mod(x+0.8,1))',
+ 'Мелодия':'frac(48*(x+4.25)/8.5)<0.84 ? -0.502+1.8-log2(1+mod(floor(48*(x+4.25)/8.5)+2,6)) : rest',
+ 'Ритм':'-1.06+mod(91357/(2+abs(mod(2*(x+8.4),8))),16)/7.9+1.3*max(0,1-abs(mod(x+8.4,2)-0.75)/0.13)+0.85*max(0,1-abs(mod(x+8.4,4)-3.25)/0.07)',
+ 'Арпеджио ≈':'-0.167+(3*mod(1-floor(160*(x+4.25)/17)+2,3)+floor(mod(1-floor(160*(x+4.25)/17)+2,3)/2))/12+floor(mod(floor(160*(x+4.25)/17),4)/2)-0.1*2^(-24*mod(80*(x+4.25)/17,1))',
+ 'Ноты MIDI':'note(pick(floor(16*(x+4.25)/8.5),72,76,79,84,79,76,72,rest,74,77,81,86,81,77,74,rest))',
+ 'Бас':'note(pick(floor(16*(x+4.25)/8.5),48,48,rest,48,55,55,rest,55,53,53,rest,53,55,55,rest,rest))',
+ 'Хэт':'mod(4*x,1)<0.15 ? 1.6+2*frac(sin(floor(x*4000)*12.9898)*43758.5453) : rest',
+ 'Сирена':'1.2*sin(x*1.6)',
+ 'Бочка 16':'-2.6683+2.65*exp(-18*frac(16*(x+4.25)/8.5))',
+ 'Пила':'-1+1.5*frac(8*(x+4.25)/8.5)',
+ 'Вибрато':'-0.3+0.06*sin(60*x)+0.5*floor(mod(4*(x+4.25),3))'
+};
+for(const k in P){const b=document.createElement('button');b.textContent='+ '+k;b.onclick=()=>{stop();const t=$('f');t.value=(t.value.trim()?t.value.trim()+'\n':'')+P[k];preview()};$('ps').append(b)}
+const cl=document.createElement('button');cl.textContent='Очистить';cl.onclick=()=>{stop();$('f').value='';fs=[];c2.clearRect(0,0,cv.width,cv.height)};$('ps').append(cl);
+const Q=new URLSearchParams(location.search);
+$('f').value=Q.get('f')||P['Бочка']+'\n'+P['Мелодия'];
+[['x0','x0'],['x1','x1'],['seconds','d']].forEach(([k,i])=>{const v=Q.get(k);if(v&&isFinite(v))$(i).value=v});
+$('p').onclick=()=>src?stop():play();
+['f','x0','x1','d','lp'].forEach(i=>$(i).addEventListener('input',()=>{if(!src)preview()}));
+addEventListener('resize',()=>{cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;preview()});
+cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;preview();
+</script></body></html>
