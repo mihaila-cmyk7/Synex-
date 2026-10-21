@@ -5,30 +5,46 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
 <style>
+:root{--bg:#000;--fg:#fff;--mut:#fff9;--ln:#fff4;--pn:#000b;color-scheme:dark}
+:root[data-theme=light]{--bg:#fff;--fg:#000;--mut:#0009;--ln:#0004;--pn:#fffb;color-scheme:light}
 *{box-sizing:border-box}
-body{margin:0;padding:12px;font:15px system-ui,sans-serif;background:var(--tg-theme-bg-color,#0f1117);color:var(--tg-theme-text-color,#e8e8ee)}
-canvas{touch-action:none;width:100%;height:210px;background:#fff1;border-radius:12px;display:block}
-textarea{width:100%;height:150px;margin:10px 0 6px;padding:10px;border-radius:12px;border:1px solid #8885;background:#fff1;color:inherit;font:13px ui-monospace,monospace}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
-input[type=number]{width:70px;padding:7px;border-radius:8px;border:1px solid #8885;background:#fff1;color:inherit}
-button{padding:9px 14px;border:0;border-radius:10px;background:#8883;color:inherit;font-size:14px}
-#p{background:var(--tg-theme-button-color,#2f81f7);color:var(--tg-theme-button-text-color,#fff);font-weight:600;flex:1}
-#err{color:#ff6b6b;min-height:18px;font-size:13px}
-video{width:100%;border-radius:12px;margin-top:8px;display:block}
-small{opacity:.6;line-height:1.4;display:block;margin-top:8px}
+body{margin:0;padding:12px 12px 28px;font:14px/1.4 "Helvetica Neue",Arial,sans-serif;background:var(--bg) center/cover fixed;color:var(--fg)}
+header{display:flex;align-items:center;gap:6px}
+header b{font-size:21px;letter-spacing:-.02em;margin-right:auto}
+.p{background:var(--pn);border:1px solid var(--ln);padding:4px 10px 10px;margin-top:8px}
+canvas{touch-action:none;width:100%;height:220px;margin-top:10px;background:var(--pn);border:1px solid var(--ln);display:block}
+textarea{width:100%;height:140px;margin:4px 0;padding:8px;border:1px solid var(--ln);background:transparent;color:inherit;font:12px/1.4 ui-monospace,Menlo,monospace;resize:vertical;border-radius:0}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}
+button,.btn{padding:7px 11px;border:1px solid var(--fg);background:transparent;color:var(--fg);font:inherit;font-size:13px;border-radius:0;cursor:pointer}
+#p{background:var(--fg);color:var(--bg);flex:1;font-weight:600}
+input[type=number]{width:64px;padding:6px;border:1px solid var(--ln);background:transparent;color:inherit;border-radius:0;font:inherit}
+input[type=range]{accent-color:var(--fg)}
+.lb{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:12px 0 2px}
+#err{color:#d33;min-height:16px;font-size:13px}
+video{width:100%;margin-top:8px;display:block}
+small{color:var(--mut);line-height:1.5;display:block;margin-top:12px}
 </style></head><body>
+<header><b>Synex²</b><button id="th">Ч / Б</button><label class="btn">Фон<input type="file" id="ph" accept="image/*" hidden></label><button id="phx" hidden>×</button></header>
 <canvas id="cv"></canvas>
-<div class="row">🔍 X <button id="xm">−</button><button id="xp">+</button> Y <button id="ym">−</button><button id="yp">+</button> <button id="zr">⟲ сброс</button></div>
+<div class="p">
+<div class="row"><button id="p">Играть</button><label><input type="checkbox" id="lp" checked> цикл</label></div>
+<div class="lb">Вид</div>
+<div class="row">Масштаб X <button id="xm">−</button><button id="xp">+</button> Y <button id="ym">−</button><button id="yp">+</button> <button id="zr">Сброс</button></div>
 <div class="row">Расстояние между строками <input type="range" id="gp" min="0" max="2" step="0.05" value="0" style="flex:1"></div>
+<div class="lb">Голоса</div>
 <div id="vo"></div>
+<div class="lb">Формулы</div>
 <textarea id="f" spellcheck="false"></textarea>
 <div id="err"></div>
-<div class="row"><button id="p">▶ Играть</button><label><input type="checkbox" id="lp" checked> цикл</label></div>
-<div class="row"><button id="dv">🎬 Видео</button><button id="da">🎧 Аудио</button><button id="dp">🖼 Картинка</button></div>
-<div id="res" hidden><video id="rv" controls playsinline></video><div class="row"><button id="sv"></button></div></div>
-<div class="row">x от <input type="number" id="x0" value="-4.25" step="any"> до <input type="number" id="x1" value="4.25" step="any"> сек <input type="number" id="d" value="8" min="1" max="60"></div>
+<div id="st" style="font-size:13px;color:var(--mut);min-height:16px"></div>
 <div class="row" id="ps"></div>
+<div class="lb">Время</div>
+<div class="row">x от <input type="number" id="x0" value="-4.25" step="any"> до <input type="number" id="x1" value="4.25" step="any"> сек <input type="number" id="d" value="8" min="1" max="60"></div>
+<div class="lb">Сохранить в чат</div>
+<div class="row"><button id="dv">Видео</button><button id="da">Аудио</button><button id="dp">Картинка</button></div>
+<div id="res" hidden><video id="rv" controls playsinline></video><div class="row"><button id="sv"></button></div></div>
 <small>Каждая строка — отдельный голос: y = f(x). x — время, y — высота тона в октавах (0 = 660 Гц). Можно: sin, cos, abs, floor, mod(a,b), frac, log2, atan, exp, max, min, pi, ^, условие <code>if(a&lt;b, p, q)</code> или <code>a&lt;b ? p : q</code>, пауза — <code>rest</code>, нота MIDI — <code>note(60)</code>, последовательность — <code>pick(i, a, b, c)</code>. Формулы вида <code>y1=if(…)</code> из Desmos можно вставлять как есть. График: двумя пальцами — масштаб, одним — сдвиг, двойной тап — сброс. Сдвиг голоса меняет и звук (в полутонах), «расстояние» только разводит строки на графике.</small>
+</div>
 <script>
 const $=id=>document.getElementById(id);
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand()}
@@ -71,20 +87,20 @@ function render(fs,x0,x1,dur){
  for(let i=0;i<N;i++)out[i]=Math.tanh(out[i]*0.7);
  return out;
 }
-const cv=$('cv'),c2=cv.getContext('2d'),dpr=window.devicePixelRatio||1,COL=['#4fc3f7','#ffb74d','#81c784','#ba68c8','#f06292'],Y=5;
+const cv=$('cv'),c2=cv.getContext('2d'),dpr=window.devicePixelRatio||1,PAL=['#e03e3e','#1f9d8b','#e0a030','#7a52b3','#2f7fc0'],css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim(),col=n=>n?PAL[(n-1)%5]:css('--fg');let bgImg=null;
 let fs=[],x0=-4.25,x1=4.25,dur=8,ctx,src,t0=0,raf;
 let vx0=-4.25,vx1=4.25,vyc=0,vys=5,lx0,lx1;const off=[];
 function resetView(){vx0=x0;vx1=x1;vyc=0;vys=5}
 function zoom(kx,ky){const cx=(vx0+vx1)/2,h=(vx1-vx0)/2*kx;vx0=cx-h;vx1=cx+h;vys*=ky}
 function draw(c,W,H,xd,bg){
- const px=x=>(x-vx0)/(vx1-vx0)*W,py=y=>H/2*(1-(y-vyc)/vys),k=bg?2:dpr,fg=bg?'#fff':getComputedStyle(cv).color,gp=+$('gp').value;
- if(bg){c.fillStyle='#0f1117';c.fillRect(0,0,W,H)}else c.clearRect(0,0,W,H);
- c.fillStyle=bg?'#0008':'#8882';
+ const px=x=>(x-vx0)/(vx1-vx0)*W,py=y=>H/2*(1-(y-vyc)/vys),k=bg?2:dpr,fg=css('--fg'),gp=+$('gp').value;
+ const BG=css('--bg');if(bg){c.fillStyle=BG;c.fillRect(0,0,W,H);if(bgImg){const r=Math.max(W/bgImg.width,H/bgImg.height),w=bgImg.width*r,h=bgImg.height*r;c.drawImage(bgImg,(W-w)/2,(H-h)/2,w,h);c.globalAlpha=.65;c.fillStyle=BG;c.fillRect(0,0,W,H);c.globalAlpha=1}}else c.clearRect(0,0,W,H);
+ c.fillStyle=fg;c.globalAlpha=.1;
  if(vx0<x0)c.fillRect(0,0,Math.min(W,px(x0)),H);
- if(vx1>x1)c.fillRect(Math.max(0,px(x1)),0,W,H);
- c.strokeStyle='#8886';c.lineWidth=k;c.beginPath();c.moveTo(0,py(0));c.lineTo(W,py(0));
- if(vx0<0&&vx1>0){c.moveTo(px(0),0);c.lineTo(px(0),H)}c.stroke();
- fs.forEach((f,n)=>{c.fillStyle=COL[n%5];const sh=-n*gp;
+ if(vx1>x1)c.fillRect(Math.max(0,px(x1)),0,W,H);c.globalAlpha=1;
+ c.strokeStyle=fg;c.globalAlpha=.35;c.lineWidth=k;c.beginPath();c.moveTo(0,py(0));c.lineTo(W,py(0));
+ if(vx0<0&&vx1>0){c.moveTo(px(0),0);c.lineTo(px(0),H)}c.stroke();c.globalAlpha=1;
+ fs.forEach((f,n)=>{c.fillStyle=col(n);const sh=-n*gp;
   for(let i=0;i<W;i++){let a=1e9,b=-1e9;
    for(let j=0;j<6;j++){const y=f(vx0+(vx1-vx0)*(i+j/6)/W)+sh;if(isFinite(y)){a=Math.min(a,y);b=Math.max(b,y)}}
    if(a<=b){const t=py(Math.min(b,vyc+2*vys));c.fillRect(i,t,Math.max(1,W/700),Math.max(1.5*k,py(Math.max(a,vyc-2*vys))-t))}}
@@ -96,7 +112,7 @@ function voices(){
  const box=$('vo');box.innerHTML='';
  fs.forEach((_,n)=>{const r=document.createElement('div'),v=document.createElement('span'),btn=(t,d)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{off[n]=((off[n]||0)*12+d)/12;stop();preview()};return b};
   r.className='row';const m=Math.round((off[n]||0)*12);
-  r.innerHTML='<span style="color:'+COL[n%5]+'">●</span> Голос '+(n+1)+': сдвиг ';v.textContent=(m>0?'+':'')+m+' пт';
+  r.innerHTML='<span style="color:'+col(n)+'">●</span> Голос '+(n+1)+': сдвиг ';v.textContent=(m>0?'+':'')+m+' пт';
   r.append(btn('−',-1),v,btn('+',1));box.append(r)});
 }
 function preview(){try{readCfg();fs=parse();$('err').textContent='';voices();plot()}catch(e){$('err').textContent=e.message}}
@@ -113,13 +129,13 @@ cv.onpointermove=e=>{const o=pts.get(e.pointerId);if(!o)return;pts.set(e.pointer
 cv.onpointerup=cv.onpointercancel=e=>{pts.delete(e.pointerId);pd=0};
 cv.onwheel=e=>{e.preventDefault();const k=e.deltaY>0?1.1:1/1.1;zoom(k,k);refresh()};
 cv.ondblclick=()=>{resetView();refresh()};
-function stop(){cancelAnimationFrame(raf);if(src){src.onended=null;try{src.stop()}catch{}src=null}$('p').textContent='▶ Играть';if(fs.length)plot()}
+function stop(){cancelAnimationFrame(raf);if(src){src.onended=null;try{src.stop()}catch{}src=null}$('p').textContent='Играть';if(fs.length)plot()}
 async function play(){
  try{readCfg();fs=parse();$('err').textContent=''}catch(e){$('err').textContent=e.message;return}
  ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();await ctx.resume();
  const d=render(fs,x0,x1,dur),b=ctx.createBuffer(1,d.length,44100);b.copyToChannel(d,0);
  src=ctx.createBufferSource();src.buffer=b;src.loop=$('lp').checked;src.connect(ctx.destination);src.onended=stop;
- t0=ctx.currentTime;src.start();$('p').textContent='■ Стоп';
+ t0=ctx.currentTime;src.start();$('p').textContent='Стоп';
  const tick=()=>{plot(x0+(x1-x0)*(((ctx.currentTime-t0)%dur)/dur));raf=requestAnimationFrame(tick)};tick();
 }
 const RC=document.createElement('canvas');RC.width=720;RC.height=480;
@@ -129,6 +145,15 @@ function wav(d){const b=new DataView(new ArrayBuffer(44+d.length*2)),w=(o,t)=>[.
  for(let i=0;i<d.length;i++)b.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]))*32767,true);
  return new Blob([b],{type:'audio/wav'})}
 async function save(blob,name){
+ const api=new URLSearchParams(location.search).get('api'),ty=blob.type.split('/')[0];
+ if(api&&tg&&tg.initData){
+  $('st').textContent='Отправляю в чат с ботом…';
+  try{
+   const r=await fetch(api.replace(/\/$/,'')+'/upload',{method:'POST',headers:{'X-Init-Data':tg.initData,'X-Kind':ty==='image'?'photo':ty==='video'?'video':'audio','X-Filename':name},body:blob});
+   if(r.ok){$('st').textContent='Отправлено в чат с ботом';return}
+   throw Error(r.status);
+  }catch(e){$('st').textContent='Не удалось отправить в чат, сохраняю файлом'}
+ }
  const f=new File([blob],name,{type:blob.type});
  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e.name==='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();
@@ -153,14 +178,25 @@ $('dv').onclick=async()=>{
   const done=new Promise(r=>rec.onstop=r);
   s.onended=()=>setTimeout(()=>{run=false;rec.stop()},400);
   rec.start();const t0=ctx.currentTime;s.start();
-  const tick=()=>{if(!run)return;const t=Math.min(ctx.currentTime-t0,dur);draw(g,720,480,x0+(x1-x0)*t/dur,true);$('dv').textContent='⏺ '+Math.round(t/dur*100)+'%';requestAnimationFrame(tick)};tick();
+  const tick=()=>{if(!run)return;const t=Math.min(ctx.currentTime-t0,dur);draw(g,720,480,x0+(x1-x0)*t/dur,true);$('dv').textContent='● '+Math.round(t/dur*100)+'%';requestAnimationFrame(tick)};tick();
   await done;
   const type=mt.split(';')[0],ext=type.includes('mp4')?'mp4':'webm';vid=new Blob(ch,{type});
-  $('rv').src=URL.createObjectURL(vid);$('sv').textContent='💾 Сохранить видео (.'+ext+')';$('sv').dataset.ext=ext;$('res').hidden=false;
+  $('rv').src=URL.createObjectURL(vid);$('sv').textContent='Сохранить видео (.'+ext+')';$('sv').dataset.ext=ext;$('res').hidden=false;
  }catch(e){fail(e)}
- $('dv').disabled=false;$('dv').textContent='🎬 Видео';
+ $('dv').disabled=false;$('dv').textContent='Видео';
 };
 $('sv').onclick=()=>save(vid,'mathmusic.'+$('sv').dataset.ext);
+function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('th',t)}catch{}if(fs.length)plot()}
+$('th').onclick=()=>setTheme(document.documentElement.dataset.theme==='light'?'dark':'light');
+function setPhoto(u){
+ if(!u){bgImg=null;document.body.style.backgroundImage='';$('phx').hidden=true;return}
+ const im=new Image();im.onload=()=>{bgImg=im;document.body.style.backgroundImage='url('+u+')';$('phx').hidden=false};im.src=u}
+$('ph').onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();
+ im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  const u=c.toDataURL('image/jpeg',.75);setPhoto(u);try{localStorage.setItem('ph',u)}catch{}};im.src=URL.createObjectURL(f)};
+$('phx').onclick=()=>{setPhoto('');try{localStorage.removeItem('ph')}catch{}};
+{let t='',u='';try{t=localStorage.getItem('th')||'';u=localStorage.getItem('ph')||''}catch{}
+ document.documentElement.dataset.theme=t||(tg&&tg.colorScheme==='light'?'light':'dark');if(u)setPhoto(u)}
 const P={
  'Бочка':'-2.5+3.9/(1+19*mod(x+0.8,1))+0.85*sin(72*pi*mod(x+0.8,1))/(1+12*mod(x+0.8,1))',
  'Мелодия':'frac(48*(x+4.25)/8.5)<0.84 ? -0.502+1.8-log2(1+mod(floor(48*(x+4.25)/8.5)+2,6)) : rest',
