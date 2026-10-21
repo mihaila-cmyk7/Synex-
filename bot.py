@@ -12,11 +12,12 @@ import httpx
 
 from google import genai
 from google.genai import types
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
+from telegram import (BotCommand, InlineKeyboardButton, InlineKeyboardMarkup,
                       MenuButtonWebApp, Update, WebAppInfo)
 from telegram.constants import ChatAction
-from telegram.ext import (Application, CommandHandler, ContextTypes,
-                          MessageHandler, filters)
+from telegram.constants import ParseMode
+from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
+                          ContextTypes, MessageHandler, filters)
 
 TOKEN = os.environ["BOT_TOKEN"]          # токен от @BotFather
 WEBAPP_URL = os.environ["WEBAPP_URL"]    # https-ссылка на index.html
@@ -87,13 +88,57 @@ def open_kb(url: str) -> InlineKeyboardMarkup:
     ]])
 
 
+BOT_NAME = "Synex²"
+
+WELCOME = (
+    f"<b>🎛 {BOT_NAME}</b>\n"
+    "<i>музыка, которую пишут формулами</i>\n"
+    "━━━━━━━━━━━━━━━\n\n"
+    "Я превращаю математику в звук. Каждая формула <code>y = f(x)</code> — отдельный голос: "
+    "x — это время, y — высота тона.\n\n"
+    "<b>Что я умею</b>\n"
+    "🎹 <b>Собирать музыку по описанию</b> — напиши «быстрая бочка и грустная мелодия», "
+    "и я подберу формулы\n"
+    "🖼 <b>Разбирать примеры</b> — пришли скриншот графика или формулу текстом, "
+    "я перепишу её под редактор\n"
+    "🎚 <b>Редактор голосов</b> — графики, масштаб, сдвиг каждого голоса по тону, "
+    "громкость, удаление в одно касание\n"
+    "🎧 <b>Своя песня на дорожке</b> — загрузи трек, выдели нужный фрагмент "
+    "(хоть 15 секунд) и двигай его по таймлайну, накладывая на формулы\n"
+    "📤 <b>Сохранять результат в чат</b> — аудио, видео с графиком или картинку\n"
+    "🎨 Тема «Ч / Б» и своё фото на фон\n\n"
+    "<b>С чего начать</b>\n"
+    "Просто напиши, какую музыку хочешь, или открой пустой редактор 👇"
+)
+
+EXAMPLES = (
+    "<b>💡 Попробуй написать</b>\n\n"
+    "• <i>«Бодрый бит: бочка на каждую долю и быстрый хэт»</i>\n"
+    "• <i>«Грустная мелодия в миноре и глубокий бас»</i>\n"
+    "• <i>«Сделай арпеджио, как в играх на 8-бит»</i>\n"
+    "• <i>«Сирена, которая медленно меняет высоту»</i>\n\n"
+    "Или пришли свою формулу, например <code>sin(x*3)</code>, "
+    "или скриншот графика — я переведу его в звук."
+)
+
+
+def welcome_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎹 Открыть редактор", web_app=WebAppInfo(url=with_api(WEBAPP_URL)))],
+        [InlineKeyboardButton("💡 Примеры запросов", callback_data="examples")],
+    ])
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Опиши, какую музыку хочешь («быстрая бочка и грустная мелодия»), "
-        "пришли свою формулу или скриншот-пример — я соберу формулы и открою редактор.\n"
-        "Или открой пустой редактор и пиши формулы сам 👇",
-        reply_markup=open_kb(WEBAPP_URL),
+        WELCOME, parse_mode=ParseMode.HTML, reply_markup=welcome_kb()
     )
+
+
+async def on_examples(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    await q.message.reply_text(EXAMPLES, parse_mode=ParseMode.HTML)
 
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -132,6 +177,25 @@ async def post_init(app: Application):
     await app.bot.set_chat_menu_button(
         menu_button=MenuButtonWebApp(text="Музыка", web_app=WebAppInfo(url=with_api(WEBAPP_URL)))
     )
+    # карточка бота до первого запуска и список команд
+    try:
+        await app.bot.set_my_commands([
+            BotCommand("start", "О боте и что он умеет"),
+            BotCommand("help", "О боте и что он умеет"),
+        ])
+        await app.bot.set_my_short_description(
+            f"{BOT_NAME} — музыка из формул: собираю звук по описанию и открываю редактор."
+        )
+        await app.bot.set_my_description(
+            f"{BOT_NAME} — музыка, которую пишут формулами.\n\n"
+            "• собираю формулы по твоему описанию или скриншоту\n"
+            "• редактор голосов с графиком\n"
+            "• своя песня на таймлайне — двигай и накладывай на формулы\n"
+            "• сохранение аудио, видео и картинки в чат\n\n"
+            "Нажми «Запустить»."
+        )
+    except Exception as e:
+        print("не удалось обновить описание бота:", e)
 
 
 MAX_BYTES = 49 * 1024 * 1024
@@ -217,7 +281,8 @@ def keep_alive():
 def main():
     threading.Thread(target=keep_alive, daemon=True).start()
     app = Application.builder().token(TOKEN).post_init(post_init).build()
-    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler(["start", "help"], start))
+    app.add_handler(CallbackQueryHandler(on_examples, pattern="^examples$"))
     app.add_handler(MessageHandler(filters.PHOTO, on_photo))
     app.add_handler(MessageHandler(filters.VIDEO, on_video))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))

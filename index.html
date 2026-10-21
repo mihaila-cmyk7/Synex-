@@ -5,24 +5,41 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
 <style>
-:root{--bg:#000;--fg:#fff;--mut:#fff9;--ln:#fff4;--pn:#000b;color-scheme:dark}
-:root[data-theme=light]{--bg:#fff;--fg:#000;--mut:#0009;--ln:#0004;--pn:#fffb;color-scheme:light}
-*{box-sizing:border-box}
-body{margin:0;padding:12px 12px 28px;font:14px/1.4 "Helvetica Neue",Arial,sans-serif;background:var(--bg) center/cover fixed;color:var(--fg)}
-header{display:flex;align-items:center;gap:6px}
-header b{font-size:21px;letter-spacing:-.02em;margin-right:auto}
-.p{background:var(--pn);border:1px solid var(--ln);padding:4px 10px 10px;margin-top:8px}
-canvas{touch-action:none;width:100%;height:220px;margin-top:10px;background:var(--pn);border:1px solid var(--ln);display:block}
-textarea{width:100%;height:140px;margin:4px 0;padding:8px;border:1px solid var(--ln);background:transparent;color:inherit;font:12px/1.4 ui-monospace,Menlo,monospace;resize:vertical;border-radius:0}
-.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}
-button,.btn{padding:7px 11px;border:1px solid var(--fg);background:transparent;color:var(--fg);font:inherit;font-size:13px;border-radius:0;cursor:pointer}
-#p{background:var(--fg);color:var(--bg);flex:1;font-weight:600}
-input[type=number]{width:64px;padding:6px;border:1px solid var(--ln);background:transparent;color:inherit;border-radius:0;font:inherit}
-input[type=range]{accent-color:var(--fg)}
-.lb{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:12px 0 2px}
-#err{color:#d33;min-height:16px;font-size:13px}
-video{width:100%;margin-top:8px;display:block}
-small{color:var(--mut);line-height:1.5;display:block;margin-top:12px}
+:root{--bg:#08080a;--fg:#f2f2ec;--mut:#f2f2ec96;--ln:#ffffff24;--pn:#111114d0;--b1:#25252b;--b2:#17171b;--sh:#000;--ac:#b43ad2;--acf:#fff;--dg:#ff5a4d;color-scheme:dark}
+:root[data-theme=light]{--bg:#ecece5;--fg:#0b0b0c;--mut:#0b0b0c94;--ln:#0b0b0c26;--pn:#ffffffd0;--b1:#ffffff;--b2:#e4e4dc;--sh:#0b0b0c40;--ac:#9a2fc4;--acf:#fff;--dg:#d6342a;color-scheme:light}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;padding:max(14px,env(safe-area-inset-top)) 14px 40px;font:14px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,monospace;background-color:var(--bg);background-position:center;background-size:cover;background-attachment:fixed;color:var(--fg);max-width:760px;margin:0 auto}
+body::before{content:"";position:fixed;inset:0;background-image:radial-gradient(var(--ln) 1px,transparent 1.3px);background-size:22px 22px;opacity:.55;pointer-events:none;z-index:-1}
+header{display:flex;align-items:center;gap:8px;padding:2px 0 6px}
+header b{font:800 30px/1 "Helvetica Neue",Arial,sans-serif;letter-spacing:-.06em;margin-right:auto}
+header b::after{content:"";display:inline-block;width:9px;height:9px;margin-left:6px;border-radius:50%;background:var(--ac);box-shadow:0 0 14px var(--ac)}
+.p{background:var(--pn);border:1px solid var(--ln);border-radius:22px;padding:6px 16px 18px;margin-top:12px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+canvas{touch-action:none;width:100%;height:240px;margin-top:12px;background:var(--pn);border:1px solid var(--ln);border-radius:22px;display:block}
+#ov,#tl{border-radius:14px}
+#ov{height:60px}#tl{height:104px}
+textarea{width:100%;height:150px;margin:6px 0;padding:12px;border:1px solid var(--ln);background:#0000000d;color:inherit;font:12px/1.5 ui-monospace,Menlo,monospace;resize:vertical;border-radius:14px;outline:0;transition:border-color .15s,box-shadow .15s}
+textarea:focus,input[type=number]:focus{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 28%,transparent)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+button,.btn{min-height:42px;padding:9px 15px;border:1px solid var(--ln);background:linear-gradient(180deg,var(--b1),var(--b2));color:var(--fg);font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.03em;border-radius:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 0 var(--sh),inset 0 1px 0 #ffffff26;transition:transform .08s,box-shadow .08s,filter .15s;user-select:none}
+button:hover,.btn:hover{filter:brightness(1.12)}
+button:active,.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--sh),inset 0 1px 0 #ffffff26}
+button:disabled{opacity:.5}
+#p{flex:1;min-height:58px;font-size:16px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 82%,#fff),var(--ac));color:var(--acf);border-color:transparent;box-shadow:0 5px 0 color-mix(in srgb,var(--ac) 45%,#000),0 8px 28px color-mix(in srgb,var(--ac) 35%,transparent),inset 0 1px 0 #fff9}
+#p:active{box-shadow:0 1px 0 color-mix(in srgb,var(--ac) 45%,#000),inset 0 1px 0 #fff9}
+.del{margin-left:auto;color:var(--dg);min-height:36px;padding:7px 12px}
+#vo .row{flex-wrap:nowrap;padding:6px 8px 6px 12px;border:1px solid var(--ln);border-radius:16px;background:#ffffff08}
+#vo .row button{min-height:36px;min-width:36px;padding:6px 10px}
+input[type=number]{width:82px;min-height:38px;padding:7px 8px;border:1px solid var(--ln);background:#0000000d;color:inherit;border-radius:12px;font:inherit;outline:0}
+label{display:inline-flex;align-items:center;gap:6px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--ac)}
+input[type=range]{accent-color:var(--ac);height:30px}
+.lb{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);margin:20px 0 4px}
+.lb::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--ac);flex:none}
+#err{color:var(--dg);min-height:16px;font-size:12px}
+video{width:100%;margin-top:10px;display:block;border-radius:16px}
+small{color:var(--mut);line-height:1.6;display:block;margin-top:18px;font-size:11px}
+a.xl{text-decoration:none}
+code{background:#ffffff14;padding:1px 5px;border-radius:6px}
 </style></head><body>
 <header><b>Synex²</b><button id="th">Ч / Б</button><label class="btn">Фон<input type="file" id="ph" accept="image/*" hidden></label><button id="phx" hidden>×</button></header>
 <canvas id="cv"></canvas>
@@ -31,7 +48,19 @@ small{color:var(--mut);line-height:1.5;display:block;margin-top:12px}
 <div class="lb">Вид</div>
 <div class="row">Масштаб X <button id="xm">−</button><button id="xp">+</button> Y <button id="ym">−</button><button id="yp">+</button> <button id="zr">Сброс</button></div>
 <div class="row">Расстояние между строками <input type="range" id="gp" min="0" max="2" step="0.05" value="0" style="flex:1"></div>
+<div class="lb">Своя дорожка (песня)</div>
+<div class="row"><label class="btn">Загрузить песню<input type="file" id="au" accept="audio/*" hidden></label><button id="aux" hidden>Убрать</button><span id="aun" style="color:var(--mut);font-size:12px"></span></div>
+<div id="tk" hidden>
+<div class="lb" style="margin-top:4px">Песня целиком — выдели фрагмент</div>
+<canvas id="ov"></canvas>
+<div class="lb">Таймлайн — тащи фрагмент по оси X, края — обрезка</div>
+<canvas id="tl"></canvas>
+<div class="row">Фрагмент с <input type="number" id="ti" step="0.1" min="0"> длина <input type="number" id="tn" step="0.1" min="0.2"> сек · старт на шкале <input type="number" id="to" step="0.1"> сек</div>
+<div class="row">Громкость песни <input type="range" id="tv" min="0" max="2" step="0.05" value="1" style="flex:1"> <label><input type="checkbox" id="tm"> без формул</label></div>
+<div class="row"><button id="tf">Длительность = фрагмент</button><button id="t0">Старт в 0</button></div>
+</div>
 <div class="lb">Голоса</div>
+<div class="row">Громкость формул <input type="range" id="fv" min="0" max="2" step="0.05" value="1" style="flex:1"></div>
 <div id="vo"></div>
 <div class="lb">Формулы</div>
 <textarea id="f" spellcheck="false"></textarea>
@@ -39,11 +68,14 @@ small{color:var(--mut);line-height:1.5;display:block;margin-top:12px}
 <div id="st" style="font-size:13px;color:var(--mut);min-height:16px"></div>
 <div class="row" id="ps"></div>
 <div class="lb">Время</div>
-<div class="row">x от <input type="number" id="x0" value="-4.25" step="any"> до <input type="number" id="x1" value="4.25" step="any"> сек <input type="number" id="d" value="8" min="1" max="60"></div>
+<div class="row">x от <input type="number" id="x0" value="-4.25" step="any"> до <input type="number" id="x1" value="4.25" step="any"> сек <input type="number" id="d" value="8" min="1" max="120"></div>
+<div class="lb">Послушать чужие формулы</div>
+<div class="row"><a class="btn xl" href="https://dollchan.net/bytebeat/">Bytebeat Composer ↗</a><a class="btn xl" href="https://bytebeat.ficial.net">Запасной сайт ↗</a></div>
+<div style="font-size:11px;color:var(--mut);line-height:1.6">Сайт, где музыка — это просто короткая формула. Открой, выбери любую песню в списке <b>Songs</b>: формула появится в поле и сразу заиграет. Меняй в ней любые числа и слушай, что получится. Там время называется <code>t</code>, а не <code>x</code>, и звук другого типа, поэтому вставлять такие формулы сюда напрямую нельзя — здесь для старта используй кнопки <b>«+ …»</b> выше.</div>
 <div class="lb">Сохранить в чат</div>
 <div class="row"><button id="dv">Видео</button><button id="da">Аудио</button><button id="dp">Картинка</button></div>
 <div id="res" hidden><video id="rv" controls playsinline></video><div class="row"><button id="sv"></button></div></div>
-<small>Каждая строка — отдельный голос: y = f(x). x — время, y — высота тона в октавах (0 = 660 Гц). Можно: sin, cos, abs, floor, mod(a,b), frac, log2, atan, exp, max, min, pi, ^, условие <code>if(a&lt;b, p, q)</code> или <code>a&lt;b ? p : q</code>, пауза — <code>rest</code>, нота MIDI — <code>note(60)</code>, последовательность — <code>pick(i, a, b, c)</code>. Формулы вида <code>y1=if(…)</code> из Desmos можно вставлять как есть. График: двумя пальцами — масштаб, одним — сдвиг, двойной тап — сброс. Сдвиг голоса меняет и звук (в полутонах), «расстояние» только разводит строки на графике.</small>
+<small>Каждая строка — отдельный голос: y = f(x). x — время, y — высота тона в октавах (0 = 660 Гц). Можно: sin, cos, abs, floor, mod(a,b), frac, log2, atan, exp, max, min, pi, ^, условие <code>if(a&lt;b, p, q)</code> или <code>a&lt;b ? p : q</code>, пауза — <code>rest</code>, нота MIDI — <code>note(60)</code>, последовательность — <code>pick(i, a, b, c)</code>. Формулы вида <code>y1=if(…)</code> из Desmos можно вставлять как есть. График: двумя пальцами — масштаб, одним — сдвиг, двойной тап — сброс. Своя дорожка: загрузи песню, выдели нужный фрагмент и перетащи его по таймлайну — волна рисуется и на графике, а звук идёт в воспроизведение и экспорт. Сдвиг голоса меняет и звук (в полутонах), «расстояние» только разводит строки на графике.</small>
 </div>
 <script>
 const $=id=>document.getElementById(id);
@@ -70,7 +102,7 @@ function gen(n){
 }
 function parse(){
  const L=$('f').value.split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
- if(!L.length)throw Error('Введи формулу');
+ if(!L.length){if(trk)return[];throw Error('Введи формулу')}
  return L.map((s,i)=>{try{
   s=s.replace(/^y\d*\s*=/,'').replace(/[−–]/g,'-').replace(/[·×]/g,'*').replace(/π/g,'pi').replace(/⌊/g,'floor(').replace(/⌋/g,')').replace(/≥/g,'>=').replace(/≤/g,'<=').replace(/≠/g,'!=').replace(/\bif\s*\(/g,'iff(').replace(/(?<![<>=!])=(?!=)/g,'==');
   return new Function('mod','frac','pick','note','return x=>'+gen(math.parse(s)))(mod,frac,pick,note);
@@ -78,17 +110,18 @@ function parse(){
 }
 function render(fs,x0,x1,dur){
  const sr=44100,N=Math.floor(sr*dur),out=new Float32Array(N),T=Math.PI*2;
- for(const f of fs){let ph=0,g=0;
+ for(const f of(trk&&$('tm').checked?[]:fs)){let ph=0,g=0;
   for(let i=0;i<N;i++){
    const y=f(x0+(x1-x0)*i/N),on=isFinite(y);
    g+=((on?1:0)-g)*0.004;
    if(on){ph+=T*Math.min(20000,Math.max(20,660*Math.pow(2,y)))/sr;if(ph>T)ph-=T}
    out[i]+=Math.sin(ph)*g;}}
- for(let i=0;i<N;i++)out[i]=Math.tanh(out[i]*0.7);
+ for(let i=0;i<N;i++)out[i]=Math.tanh(out[i]*0.7*(+$('fv').value));
+ mixTrack(out);
  return out;
 }
 const cv=$('cv'),c2=cv.getContext('2d'),dpr=window.devicePixelRatio||1,PAL=['#e03e3e','#1f9d8b','#e0a030','#7a52b3','#2f7fc0'],css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim(),col=n=>n?PAL[(n-1)%5]:css('--fg');let bgImg=null;
-let fs=[],x0=-4.25,x1=4.25,dur=8,ctx,src,t0=0,raf;
+let fs=[],x0=-4.25,x1=4.25,dur=8,ctx,src,t0=0,raf,trk=null;
 let vx0=-4.25,vx1=4.25,vyc=0,vys=5,lx0,lx1;const off=[];
 function resetView(){vx0=x0;vx1=x1;vyc=0;vys=5}
 function zoom(kx,ky){const cx=(vx0+vx1)/2,h=(vx1-vx0)/2*kx;vx0=cx-h;vx1=cx+h;vys*=ky}
@@ -100,6 +133,7 @@ function draw(c,W,H,xd,bg){
  if(vx1>x1)c.fillRect(Math.max(0,px(x1)),0,W,H);c.globalAlpha=1;
  c.strokeStyle=fg;c.globalAlpha=.35;c.lineWidth=k;c.beginPath();c.moveTo(0,py(0));c.lineTo(W,py(0));
  if(vx0<0&&vx1>0){c.moveTo(px(0),0);c.lineTo(px(0),H)}c.stroke();c.globalAlpha=1;
+ if(trk)wfMain(c,W,H);
  fs.forEach((f,n)=>{c.fillStyle=col(n);const sh=-n*gp;
   for(let i=0;i<W;i++){let a=1e9,b=-1e9;
    for(let j=0;j<6;j++){const y=f(vx0+(vx1-vx0)*(i+j/6)/W)+sh;if(isFinite(y)){a=Math.min(a,y);b=Math.max(b,y)}}
@@ -107,16 +141,24 @@ function draw(c,W,H,xd,bg){
   if(xd!==undefined){const y=f(xd)+sh;if(isFinite(y)){c.beginPath();c.arc(px(xd),py(y),6*k,0,7);c.fillStyle=fg;c.fill()}}});
 }
 const plot=xd=>draw(c2,cv.width,cv.height,xd);
-function readCfg(){x0=+$('x0').value;x1=+$('x1').value;dur=Math.min(60,Math.max(1,+$('d').value||8));if(x1<=x0)throw Error('x «до» должен быть больше «от»');if(x0!==lx0||x1!==lx1){lx0=x0;lx1=x1;resetView()}}
+function readCfg(){x0=+$('x0').value;x1=+$('x1').value;dur=Math.min(120,Math.max(1,+$('d').value||8));if(x1<=x0)throw Error('x «до» должен быть больше «от»');if(x0!==lx0||x1!==lx1){lx0=x0;lx1=x1;resetView()}}
 function voices(){
  const box=$('vo');box.innerHTML='';
  fs.forEach((_,n)=>{const r=document.createElement('div'),v=document.createElement('span'),btn=(t,d)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{off[n]=((off[n]||0)*12+d)/12;stop();preview()};return b};
   r.className='row';const m=Math.round((off[n]||0)*12);
-  r.innerHTML='<span style="color:'+col(n)+'">●</span> Голос '+(n+1)+': сдвиг ';v.textContent=(m>0?'+':'')+m+' пт';
-  r.append(btn('−',-1),v,btn('+',1));box.append(r)});
+  r.innerHTML='<span style="color:'+col(n)+'">●</span> Голос '+(n+1)+' ';v.title='сдвиг тона в полутонах';v.textContent=(m>0?'+':'')+m+' пт';
+  const dl=document.createElement('button');dl.textContent='Удалить';dl.className='del';dl.onclick=()=>delVoice(n);
+  v.style.minWidth='44px';v.style.textAlign='center';r.append(btn('−',-1),v,btn('+',1),dl);box.append(r)});
 }
-function preview(){try{readCfg();fs=parse();$('err').textContent='';voices();plot()}catch(e){$('err').textContent=e.message}}
-const refresh=()=>{if(!src&&fs.length)plot()};
+function delVoice(n){
+ stop();const L=$('f').value.split('\n');let k=-1;
+ for(let i=0;i<L.length;i++){const t=L[i].trim();if(t&&t[0]!=='#'&&++k===n){L.splice(i,1);break}}
+ $('f').value=L.join('\n');off.splice(n,1);
+ if(L.some(l=>l.trim()&&l.trim()[0]!=='#'))preview();
+ else{fs=[];off.length=0;$('err').textContent='';voices();plot();if(trk)tkDraw()}
+}
+function preview(){try{readCfg();fs=parse();$('err').textContent='';voices();plot()}catch(e){$('err').textContent=e.message}if(trk)tkDraw()}
+const refresh=()=>{if(!src&&(fs.length||trk))plot()};
 $('xp').onclick=()=>{zoom(1/1.4,1);refresh()};$('xm').onclick=()=>{zoom(1.4,1);refresh()};
 $('yp').onclick=()=>{zoom(1,1/1.4);refresh()};$('ym').onclick=()=>{zoom(1,1.4);refresh()};
 $('zr').onclick=()=>{resetView();refresh()};$('gp').oninput=refresh;
@@ -129,17 +171,101 @@ cv.onpointermove=e=>{const o=pts.get(e.pointerId);if(!o)return;pts.set(e.pointer
 cv.onpointerup=cv.onpointercancel=e=>{pts.delete(e.pointerId);pd=0};
 cv.onwheel=e=>{e.preventDefault();const k=e.deltaY>0?1.1:1/1.1;zoom(k,k);refresh()};
 cv.ondblclick=()=>{resetView();refresh()};
-function stop(){cancelAnimationFrame(raf);if(src){src.onended=null;try{src.stop()}catch{}src=null}$('p').textContent='Играть';if(fs.length)plot()}
+function stop(){cancelAnimationFrame(raf);if(src){src.onended=null;try{src.stop()}catch{}src=null}$('p').textContent='Играть';if(fs.length||trk)plot();if(trk)drawTl()}
 async function play(){
  try{readCfg();fs=parse();$('err').textContent=''}catch(e){$('err').textContent=e.message;return}
  ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();await ctx.resume();
  const d=render(fs,x0,x1,dur),b=ctx.createBuffer(1,d.length,44100);b.copyToChannel(d,0);
  src=ctx.createBufferSource();src.buffer=b;src.loop=$('lp').checked;src.connect(ctx.destination);src.onended=stop;
  t0=ctx.currentTime;src.start();$('p').textContent='Стоп';
- const tick=()=>{plot(x0+(x1-x0)*(((ctx.currentTime-t0)%dur)/dur));raf=requestAnimationFrame(tick)};tick();
+ const tick=()=>{const tt=(ctx.currentTime-t0)%dur;plot(x0+(x1-x0)*(tt/dur));if(trk)drawTl(tt);raf=requestAnimationFrame(tick)};tick();
 }
 const RC=document.createElement('canvas');RC.width=720;RC.height=480;
 const AC=window.AudioContext||window.webkitAudioContext;let vid=null;
+
+/* ===== Своя дорожка ===== */
+const trkCol=()=>css('--ac'),MINL=.2,HIT=14,clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+function mixTrack(out){
+ if(!trk)return;const sr=44100,N=out.length,v=+$('tv').value,d=trk.data,s=trk.sr,e=trk.tOff+trk.len;
+ for(let i=Math.max(0,Math.floor(trk.tOff*sr)),z=Math.min(N,Math.ceil(e*sr));i<z;i++){
+  const t=i/sr,p=(trk.in+t-trk.tOff)*s,k=Math.floor(p);if(k<0||k+1>=d.length)continue;
+  const fr=p-k,y=d[k]*(1-fr)+d[k+1]*fr,g=Math.min(1,(t-trk.tOff)/.008,(e-t)/.008);
+  out[i]=clamp(out[i]+y*v*g,-1,1)}
+}
+function pk(t,dt){ // мин/макс исходной волны на [t, t+dt] (сек исходника)
+ const s=trk.sr,d=trk.data;let a=Math.max(0,Math.floor(t*s));const b=Math.min(d.length,Math.ceil((t+dt)*s)+1);if(b<=a)return null;
+ const st=Math.max(1,Math.floor((b-a)/48));a-=a%st;let mn=1,mx=-1;for(let i=a;i<b;i+=st){const v=d[i];if(v<mn)mn=v;if(v>mx)mx=v}
+ return mx<mn?null:[mn,mx]}
+function wfMain(c,W,H){
+ const dt=(vx1-vx0)/W/(x1-x0)*dur,v=+$('tv').value,e=trk.tOff+trk.len;
+ c.fillStyle=trkCol();c.globalAlpha=.4;
+ for(let i=0;i<W;i++){const t=(vx0+(vx1-vx0)*i/W-x0)/(x1-x0)*dur;if(t<trk.tOff||t>e)continue;
+  const p=pk(trk.in+t-trk.tOff,dt);if(!p)continue;
+  const hi=clamp(p[1]*trk.norm*v,-1,1)*H*.3,lo=clamp(p[0]*trk.norm*v,-1,1)*H*.3;
+  c.fillRect(i,H/2-hi,Math.max(1,W/700),Math.max(1,hi-lo))}
+ c.globalAlpha=1}
+function sizeCv(){for(const c of[$('ov'),$('tl')]){c.width=c.clientWidth*dpr;c.height=c.clientHeight*dpr}}
+function drawOv(){
+ const c=$('ov'),g=c.getContext('2d'),W=c.width,H=c.height;if(!W||!trk)return;g.clearRect(0,0,W,H);
+ const bins=trk.pk.length/2,hh=H/2*.92;g.fillStyle=css('--fg');g.globalAlpha=.45;
+ for(let i=0;i<W;i++){const b=Math.min(bins-1,Math.floor(i/W*bins)),mn=trk.pk[2*b],mx=trk.pk[2*b+1];g.fillRect(i,H/2-mx*trk.norm*hh,1,Math.max(1,(mx-mn)*trk.norm*hh))}
+ const a=trk.in/trk.total*W,b=(trk.in+trk.len)/trk.total*W;
+ g.fillStyle=trkCol();g.globalAlpha=.3;g.fillRect(a,0,b-a,H);g.globalAlpha=1;g.fillRect(a,0,3*dpr,H);g.fillRect(b-3*dpr,0,3*dpr,H);
+ g.fillStyle=css('--fg');g.globalAlpha=.7;g.font=10*dpr+'px sans-serif';g.textBaseline='top';g.fillText(fmt(trk.in)+' – '+fmt(trk.in+trk.len)+' из '+fmt(trk.total),4*dpr,3*dpr);g.globalAlpha=1}
+function drawTl(tp){
+ if(!trk)return;const c=$('tl'),g=c.getContext('2d'),W=c.width,H=c.height,fg=css('--fg'),px=t=>t/dur*W;if(!W)return;g.clearRect(0,0,W,H);
+ const st=[.5,1,2,5,10,15,30,60].find(s=>px(s)>=70*dpr)||60;g.font=10*dpr+'px sans-serif';g.textBaseline='top';
+ for(let t=0;t<=dur+1e-9;t+=st){const X=px(t);g.fillStyle=fg;g.globalAlpha=.15;g.fillRect(X,0,dpr,H);g.globalAlpha=.6;g.fillText(+t.toFixed(2)+' с',X+3*dpr,H-13*dpr)}
+ g.globalAlpha=1;const a=px(trk.tOff),b=px(trk.tOff+trk.len),dt=dur/W,v=+$('tv').value;
+ g.fillStyle=trkCol();g.globalAlpha=.18;g.fillRect(a,0,b-a,H);g.globalAlpha=.85;
+ for(let i=Math.max(0,Math.floor(a));i<Math.min(W,Math.ceil(b));i++){const p=pk(trk.in+i*dt-trk.tOff,dt);if(!p)continue;
+  const hi=clamp(p[1]*trk.norm*v,-1,1)*H*.42,lo=clamp(p[0]*trk.norm*v,-1,1)*H*.42;g.fillRect(i,H/2-hi,1,Math.max(1,hi-lo))}
+ g.globalAlpha=1;g.fillRect(a,0,3*dpr,H);g.fillRect(b-3*dpr,0,3*dpr,H);
+ if(tp!==undefined){g.fillStyle=fg;g.fillRect(px(tp),0,2*dpr,H)}}
+function syncIn(){for(const[id,v]of[['ti',trk.in],['tn',trk.len],['to',trk.tOff]])if(document.activeElement!==$(id))$(id).value=+v.toFixed(2)}
+function tkDraw(){drawOv();drawTl();syncIn()}
+function tkRedraw(){if(!src)plot();tkDraw()}
+function bindDrag(c,geom,apply){
+ let m=null,s0,xp;const edge=(e)=>{const r=c.getBoundingClientRect(),X=e.clientX-r.left,g=geom(r.width),h=Math.min(HIT,(g.b-g.a)/3),da=Math.abs(X-g.a),db=Math.abs(X-g.b);
+  return{X,g,m:da<=h&&da<=db?'l':db<=h?'r':'m'}};
+ c.onpointerdown=e=>{if(!trk)return;if(src)stop();c.setPointerCapture(e.pointerId);const q=edge(e);m=q.m;s0={in:trk.in,len:trk.len,tOff:trk.tOff};xp=e.clientX;
+  if(m==='m'&&(q.X<q.g.a||q.X>q.g.b)){apply('m',(q.X-(q.g.a+q.g.b)/2)*q.g.spp,s0);s0={in:trk.in,len:trk.len,tOff:trk.tOff}}};
+ c.onpointermove=e=>{if(!trk)return;if(!m){c.style.cursor=edge(e).m==='m'?'grab':'ew-resize';return}apply(m,(e.clientX-xp)*edge(e).g.spp,s0)};
+ c.onpointerup=c.onpointercancel=()=>{m=null};
+}
+bindDrag($('ov'),w=>({a:trk.in/trk.total*w,b:(trk.in+trk.len)/trk.total*w,spp:trk.total/w}),(m,dx,s)=>{
+ if(m==='m')trk.in=clamp(s.in+dx,0,trk.total-s.len);
+ else if(m==='l'){const d=clamp(dx,-s.in,s.len-MINL);trk.in=s.in+d;trk.len=s.len-d}
+ else trk.len=clamp(s.len+dx,MINL,trk.total-s.in);
+ tkRedraw()});
+bindDrag($('tl'),w=>({a:trk.tOff/dur*w,b:(trk.tOff+trk.len)/dur*w,spp:dur/w}),(m,dx,s)=>{
+ if(m==='m')trk.tOff=clamp(s.tOff+dx,-(s.len-MINL),dur-MINL);
+ else if(m==='l'){const d=clamp(dx,-s.in,s.len-MINL);trk.in=s.in+d;trk.len=s.len-d;trk.tOff=s.tOff+d}
+ else trk.len=clamp(s.len+dx,MINL,trk.total-s.in);
+ tkRedraw()});
+['ti','tn','to'].forEach(id=>$(id).oninput=()=>{if(!trk||$(id).value==='')return;const v=+$(id).value;if(!isFinite(v))return;if(src)stop();
+ if(id==='ti'){trk.in=clamp(v,0,trk.total-MINL);trk.len=Math.min(trk.len,trk.total-trk.in)}
+ else if(id==='tn')trk.len=clamp(v,MINL,trk.total-trk.in);
+ else trk.tOff=clamp(v,-(trk.len-MINL),dur-MINL);
+ tkRedraw()});
+$('fv').oninput=()=>{if(src)stop()};
+$('tv').oninput=()=>{if(src)stop();tkRedraw()};$('tm').oninput=()=>{if(src)stop()};
+$('tf').onclick=()=>{if(!trk)return;stop();$('d').value=clamp(+trk.len.toFixed(2),1,120);trk.tOff=0;preview()};
+$('t0').onclick=()=>{if(!trk)return;stop();trk.tOff=0;tkRedraw()};
+$('aux').onclick=()=>{stop();trk=null;$('tk').hidden=true;$('aux').hidden=true;$('aun').textContent='';preview()};
+$('au').onchange=async e=>{
+ const f=e.target.files[0];e.target.value='';if(!f)return;stop();$('aun').textContent='Загружаю…';
+ try{
+  ctx=ctx||new AC();
+  const ab=await f.arrayBuffer(),buf=await new Promise((ok,no)=>{const p=ctx.decodeAudioData(ab,ok,no);if(p&&p.catch)p.catch(no)}),n=buf.length,ch=buf.numberOfChannels;
+  let data;if(ch===1)data=buf.getChannelData(0);else{data=new Float32Array(n);for(let k=0;k<ch;k++){const d=buf.getChannelData(k);for(let i=0;i<n;i++)data[i]+=d[i]/ch}}
+  let mx=0;for(let i=0;i<n;i++){const v=Math.abs(data[i]);if(v>mx)mx=v}
+  const bins=2000,P=new Float32Array(bins*2);
+  for(let q=0;q<bins;q++){const a=Math.floor(q*n/bins),z=Math.floor((q+1)*n/bins);let lo=1,hi=-1;for(let i=a;i<z;i++){const v=data[i];if(v<lo)lo=v;if(v>hi)hi=v}if(hi<lo){lo=0;hi=0}P[2*q]=lo;P[2*q+1]=hi}
+  trk={data,sr:buf.sampleRate,total:n/buf.sampleRate,norm:mx>0?1/mx:1,pk:P,in:0,len:0,tOff:0};trk.len=Math.min(trk.total,dur);
+  $('tk').hidden=false;$('aux').hidden=false;$('aun').textContent=f.name+' · '+fmt(trk.total);$('err').textContent='';sizeCv();preview();
+ }catch(err){trk=null;$('aun').textContent='';$('err').textContent='Не удалось прочитать аудиофайл';preview()}
+};
 function wav(d){const b=new DataView(new ArrayBuffer(44+d.length*2)),w=(o,t)=>[...t].forEach((h,i)=>b.setUint8(o+i,h.charCodeAt(0)));
  w(0,'RIFF');b.setUint32(4,36+d.length*2,true);w(8,'WAVEfmt ');b.setUint32(16,16,true);b.setUint16(20,1,true);b.setUint16(22,1,true);b.setUint32(24,44100,true);b.setUint32(28,88200,true);b.setUint16(32,2,true);b.setUint16(34,16,true);w(36,'data');b.setUint32(40,d.length*2,true);
  for(let i=0;i<d.length;i++)b.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]))*32767,true);
@@ -186,7 +312,7 @@ $('dv').onclick=async()=>{
  $('dv').disabled=false;$('dv').textContent='Видео';
 };
 $('sv').onclick=()=>save(vid,'mathmusic.'+$('sv').dataset.ext);
-function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('th',t)}catch{}if(fs.length)plot()}
+function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('th',t)}catch{}if(fs.length||trk)plot();if(trk)tkDraw()}
 $('th').onclick=()=>setTheme(document.documentElement.dataset.theme==='light'?'dark':'light');
 function setPhoto(u){
  if(!u){bgImg=null;document.body.style.backgroundImage='';$('phx').hidden=true;return}
@@ -208,15 +334,22 @@ const P={
  'Сирена':'1.2*sin(x*1.6)',
  'Бочка 16':'-2.6683+2.65*exp(-18*frac(16*(x+4.25)/8.5))',
  'Пила':'-1+1.5*frac(8*(x+4.25)/8.5)',
- 'Вибрато':'-0.3+0.06*sin(60*x)+0.5*floor(mod(4*(x+4.25),3))'
+ 'Вибрато':'-0.3+0.06*sin(60*x)+0.5*floor(mod(4*(x+4.25),3))',
+ 'Снэр':'mod(x+0.8,2)<0.12 ? -0.2+2*frac(sin(floor(x*4000)*12.9898)*43758.5453) : rest',
+ 'Аккорд Am':'note(pick(floor(32*(x+4.25)/8.5),57,60,64,69,64,60,64,69))',
+ 'Пентатоника':'note(pick(floor(24*(x+4.25)/8.5),60,62,64,67,69,72,69,67,64,62,rest,rest))',
+ 'Синкопа':'note(pick(floor(16*(x+4.25)/8.5),60,rest,60,rest,63,rest,60,rest,65,rest,63,rest,60,rest,rest,rest))',
+ 'Саб-бас':'-2.2+0.04*sin(40*x)+0.25*floor(mod(2*(x+4.25),2))',
+ 'Лазер':'2-3.5*frac(4*(x+4.25)/8.5)'
 };
 for(const k in P){const b=document.createElement('button');b.textContent='+ '+k;b.onclick=()=>{stop();const t=$('f');t.value=(t.value.trim()?t.value.trim()+'\n':'')+P[k];preview()};$('ps').append(b)}
 const cl=document.createElement('button');cl.textContent='Очистить';cl.onclick=()=>{stop();$('f').value='';fs=[];c2.clearRect(0,0,cv.width,cv.height)};$('ps').append(cl);
 const Q=new URLSearchParams(location.search);
 $('f').value=Q.get('f')||P['Бочка']+'\n'+P['Мелодия'];
 [['x0','x0'],['x1','x1'],['seconds','d']].forEach(([k,i])=>{const v=Q.get(k);if(v&&isFinite(v))$(i).value=v});
+document.querySelectorAll('a.xl').forEach(a=>{a.target='_blank';a.rel='noopener';a.onclick=e=>{if(tg&&tg.openLink){e.preventDefault();tg.openLink(a.href)}}});
 $('p').onclick=()=>src?stop():play();
 ['f','x0','x1','d','lp'].forEach(i=>$(i).addEventListener('input',()=>{if(!src)preview()}));
-addEventListener('resize',()=>{cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;preview()});
+addEventListener('resize',()=>{cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;sizeCv();preview()});
 cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;preview();
 </script></body></html>
