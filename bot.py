@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import quote
 
 from google import genai
@@ -118,7 +120,25 @@ async def post_init(app: Application):
     )
 
 
+class Ping(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"ok")
+
+    do_HEAD = do_GET
+
+    def log_message(self, *args):
+        pass
+
+
+def keep_alive():
+    # Render (Web Service) требует открытый порт
+    HTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), Ping).serve_forever()
+
+
 def main():
+    threading.Thread(target=keep_alive, daemon=True).start()
     app = Application.builder().token(TOKEN).post_init(post_init).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.PHOTO, on_photo))
