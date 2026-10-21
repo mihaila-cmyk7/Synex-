@@ -5,8 +5,8 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
 <style>
-:root{--bg:#08080a;--fg:#f2f2ec;--mut:#f2f2ec96;--ln:#ffffff24;--pn:#111114d0;--b1:#25252b;--b2:#17171b;--sh:#000;--ac:#b43ad2;--acf:#fff;--dg:#ff5a4d;color-scheme:dark}
-:root[data-theme=light]{--bg:#ecece5;--fg:#0b0b0c;--mut:#0b0b0c94;--ln:#0b0b0c26;--pn:#ffffffd0;--b1:#ffffff;--b2:#e4e4dc;--sh:#0b0b0c40;--ac:#9a2fc4;--acf:#fff;--dg:#d6342a;color-scheme:light}
+:root{--bg:#0b0806;--fg:#f2f2ec;--mut:#f2f2ec96;--ln:#ffffff24;--pn:#111114d0;--b1:#25252b;--b2:#17171b;--sh:#000;--ac:#e0620d;--acf:#fff;--dg:#ff5a4d;color-scheme:dark}
+:root[data-theme=light]{--bg:#f1ebe3;--fg:#0b0b0c;--mut:#0b0b0c94;--ln:#0b0b0c26;--pn:#ffffffd0;--b1:#ffffff;--b2:#e4e4dc;--sh:#0b0b0c40;--ac:#c2500a;--acf:#fff;--dg:#d6342a;color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;padding:max(14px,env(safe-area-inset-top)) 14px 40px;font:14px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,monospace;background-color:var(--bg);background-position:center;background-size:cover;background-attachment:fixed;color:var(--fg);max-width:760px;margin:0 auto}
 body::before{content:"";position:fixed;inset:0;background-image:radial-gradient(var(--ln) 1px,transparent 1.3px);background-size:22px 22px;opacity:.55;pointer-events:none;z-index:-1}
@@ -124,7 +124,7 @@ function render(fs,x0,x1,dur){
  mixTrack(out);
  return out;
 }
-const cv=$('cv'),c2=cv.getContext('2d'),dpr=window.devicePixelRatio||1,PAL=['#e03e3e','#1f9d8b','#e0a030','#7a52b3','#2f7fc0'],css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim(),col=n=>n?PAL[(n-1)%5]:css('--fg');let bgImg=null;
+const cv=$('cv'),c2=cv.getContext('2d'),dpr=window.devicePixelRatio||1,PAL=['#e8590c','#f59f00','#c92a2a','#ff8a3d','#a8480f'],css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim(),col=n=>n?PAL[(n-1)%5]:css('--fg');let bgImg=null;
 let fs=[],x0=-4.25,x1=4.25,dur=8,ctx,src,t0=0,raf,trk=null;
 let vx0=-4.25,vx1=4.25,vyc=0,vys=5,lx0,lx1;const off=[];
 function resetView(){vx0=x0;vx1=x1;vyc=0;vys=5}
@@ -355,20 +355,20 @@ const SX=[
  'frac(2*x)<0.8 ? note(pick(floor(2*x),45,45,57,45,45,57,45,45,41,41,53,41,41,53,41,41,48,48,60,48,48,60,48,48,43,43,55,43,43,55,43,43)) : rest',
  'frac(4*x)<0.7 ? note(pick(floor(x/4),69,65,72,67)+pick(mod(floor(4*x),8),0,7,12,7,pick(floor(x/4),15,16,16,16),7,12,7)) : rest'
 ];
-$('sx').onclick=()=>{stop();$('f').value=SX.join('\n');off.length=0;$('x0').value=0;$('x1').value=16;$('d').value=8.73;$('lp').checked=true;preview();play()};
+$('sx').onclick=()=>{sngStop();stop();$('f').value=SX.join('\n');off.length=0;$('x0').value=0;$('x1').value=16;$('d').value=8.73;$('lp').checked=true;preview();play()};
 const Q=new URLSearchParams(location.search);
 $('f').value=Q.get('f')||P['Бочка']+'\n'+P['Мелодия'];
 [['x0','x0'],['x1','x1'],['seconds','d']].forEach(([k,i])=>{const v=Q.get(k);if(v&&isFinite(v))$(i).value=v});
 document.querySelectorAll('a.xl').forEach(a=>{a.target='_blank';a.rel='noopener';a.onclick=e=>{if(tg&&tg.openLink){e.preventDefault();tg.openLink(a.href)}}});
-/* логотип Synex² сверху: песня с 2:50 на фоне + играют формулы из редактора (файл let-it-happen.mp3 лежит рядом с index.html) */
+/* логотип Synex² сверху: только песня с 2:50, формулы стираются (файл let-it-happen.mp3 лежит рядом с index.html) */
 const SNG=new Audio('let-it-happen.mp3');SNG.preload='auto';SNG.volume=.8;
 const H=document.querySelector('header');
 const sngStop=()=>{SNG.pause();SNG.currentTime=0;H.classList.remove('on')};
 SNG.onended=sngStop;
 $('lg').onclick=()=>{
  if(!SNG.paused||src){sngStop();if(src)stop();return}
+ stop();$('f').value='';fs=[];off.length=0;$('err').textContent='';voices();c2.clearRect(0,0,cv.width,cv.height);/* формулы стираются, играет только песня */
  SNG.currentTime=0;SNG.play().then(()=>H.classList.add('on')).catch(()=>{});
- play();
 };
 $('p').onclick=()=>{sngStop();src?stop():play()};
 ['f','x0','x1','d','lp'].forEach(i=>$(i).addEventListener('input',()=>{if(!src)preview()}));
