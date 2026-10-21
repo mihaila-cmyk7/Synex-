@@ -1,9 +1,14 @@
+import hashlib
+import hmac
 import json
 import os
 import re
 import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import quote
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qsl, quote
+
+import httpx
 
 from google import genai
 from google.genai import types
@@ -15,6 +20,7 @@ from telegram.ext import (Application, CommandHandler, ContextTypes,
 
 TOKEN = os.environ["BOT_TOKEN"]          # токен от @BotFather
 WEBAPP_URL = os.environ["WEBAPP_URL"]    # https-ссылка на index.html
+PUBLIC_URL = os.environ.get("PUBLIC_URL") or os.environ.get("RENDER_EXTERNAL_URL", "")
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])  # ключ из Google AI Studio
 
@@ -67,7 +73,15 @@ def app_url(d: dict) -> str:
     return f"{WEBAPP_URL}?{q}"
 
 
+def with_api(url: str) -> str:
+    # приложению нужен адрес сервера бота, чтобы слать файлы в чат
+    if not PUBLIC_URL:
+        return url
+    return url + ("&" if "?" in url else "?") + "api=" + quote(PUBLIC_URL, safe="")
+
+
 def open_kb(url: str) -> InlineKeyboardMarkup:
+    url = with_api(url)
     return InlineKeyboardMarkup([[
         InlineKeyboardButton("🎹 Открыть редактор", web_app=WebAppInfo(url=url))
     ]])
@@ -116,25 +130,88 @@ async def respond(update: Update, content):
 
 async def post_init(app: Application):
     await app.bot.set_chat_menu_button(
-        menu_button=MenuButtonWebApp(text="Музыка", web_app=WebAppInfo(url=WEBAPP_URL))
+        menu_button=MenuButtonWebApp(text="Музыка", web_app=WebAppInfo(url=with_api(WEBAPP_URL)))
     )
 
 
-class Ping(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"ok")
+MAX_BYTES = 49 * 1024 * 1024
+CORS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "X-Init-Data, X-Kind, X-Filename, Content-Type",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+}
 
-    do_HEAD = do_GET
+
+def user_id_from_init(init_data: str):
+    """Проверяем подпись Telegram и достаём id пользователя."""
+    try:
+        pairs = dict(parse_qsl(init_data, keep_blank_values=True))
+        got = pairs.pop("hash", "")
+        check = "\n".join(f"{k}={v}" for k, v in sorted(pairs.items()))
+        secret = hmac.new(b"WebAppData", TOKEN.encode(), hashlib.sha256).digest()
+        calc = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(calc, got):
+            return None
+        if time.time() - int(pairs.get("auth_date", 0)) > 86400:
+            return None
+        return json.loads(pairs["user"])["id"]
+    except Exception:
+        return None
+
+
+class Ping(BaseHTTPRequestHandler):
+    def _send(self, code, body=b"", with_body=True):
+        self.send_response(code)
+        for k, v in CORS.items():
+            self.send_header(k, v)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if with_body:
+            self.wfile.write(body)
+
+    def do_GET(self):
+        self._send(200, b"ok")
+
+    def do_HEAD(self):
+        self._send(200, b"ok", with_body=False)
+
+    def do_OPTIONS(self):
+        self._send(204)
+
+    def do_POST(self):
+        if self.path != "/upload":
+            return self._send(404)
+        uid = user_id_from_init(self.headers.get("X-Init-Data", ""))
+        n = int(self.headers.get("Content-Length", 0))
+        if not uid:
+            return self._send(403, b"bad auth")
+        if n <= 0 or n > MAX_BYTES:
+            return self._send(413, b"size")
+        data = self.rfile.read(n)
+        kind = self.headers.get("X-Kind", "file")
+        name = os.path.basename(self.headers.get("X-Filename", "mathmusic"))
+        method, field = {"video": ("sendVideo", "video"),
+                         "photo": ("sendPhoto", "photo")}.get(kind, ("sendDocument", "document"))
+        if name.endswith(".webm"):
+            method, field = "sendDocument", "document"
+        try:
+            r = httpx.post(
+                f"https://api.telegram.org/bot{TOKEN}/{method}",
+                data={"chat_id": uid, "caption": "🎹 Math Music"},
+                files={field: (name, data)},
+                timeout=120,
+            )
+            ok = r.is_success
+        except Exception:
+            ok = False
+        self._send(200 if ok else 502, b"ok" if ok else b"telegram error")
 
     def log_message(self, *args):
         pass
 
 
 def keep_alive():
-    # Render (Web Service) требует открытый порт
-    HTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), Ping).serve_forever()
+    ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), Ping).serve_forever()
 
 
 def main():
